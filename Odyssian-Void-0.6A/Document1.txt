@@ -1,0 +1,5 @@
+Select Name, DmgType, DTVal, DTLng from equipment_data where type != "Ship"
+
+Update equipment_data
+set DTVal = 0.28, DTLng = 4
+where DmgType = "napalm2" and Type != "Ship" OR "Clone" OR "Ore" OR "Resource" OR "PDefense" OR "PShield"
