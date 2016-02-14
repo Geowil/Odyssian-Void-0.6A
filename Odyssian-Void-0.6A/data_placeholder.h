@@ -32,6 +32,11 @@ using std::vector;
 struct settings
 {
 	//game settings imported here
+	string setKey; //Setting Key Value
+	float setFVal; //Setting Float Value
+	int setIVal; //Setting Int Value
+	long long setI64Val; //Setting Int64 Value
+	string setSVal; //Setting String Value
 };
 
 struct ship

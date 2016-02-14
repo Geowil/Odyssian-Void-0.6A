@@ -114,7 +114,6 @@
     <ClInclude Include="entity.h" />
     <ClInclude Include="e_node.h" />
     <ClInclude Include="game.h" />
-    <ClInclude Include="globalvars.h" />
     <ClInclude Include="g_structs.h" />
     <ClInclude Include="hand.h" />
     <ClInclude Include="hardPoint.h" />
@@ -133,6 +132,7 @@
     <ClInclude Include="relation.h" />
     <ClInclude Include="res.h" />
     <ClInclude Include="scomponents.h" />
+    <ClInclude Include="settings.h" />
     <ClInclude Include="ship.h" />
     <ClInclude Include="ship2.h" />
     <ClInclude Include="sinv.h" />
@@ -166,7 +166,6 @@
     <ClCompile Include="engine.cpp" />
     <ClCompile Include="entity.cpp" />
     <ClCompile Include="game.cpp" />
-    <ClCompile Include="globalvars.cpp" />
     <ClCompile Include="hardPoint.cpp" />
     <ClCompile Include="hstructure.cpp" />
     <ClCompile Include="main.cpp" />
@@ -180,6 +179,7 @@
     <ClCompile Include="ram.cpp" />
     <ClCompile Include="relation.cpp" />
     <ClCompile Include="res.cpp" />
+    <ClCompile Include="settings.cpp" />
     <ClCompile Include="ship.cpp" />
     <ClCompile Include="ship2.cpp" />
     <ClCompile Include="sinv.cpp" />
