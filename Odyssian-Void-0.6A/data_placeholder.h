@@ -309,10 +309,47 @@ struct ore
 	long long oXCost;
 };
 
+struct equipment {
+	string eName; //Name
+	string eDesc; //Description
+	string eType; //Type
+	string eClass; //Class
+	string eSClass; //Subclass
+	int eTLevel; //Tech Level
+	float eMnDmg; //Min Damage
+	float eMxDmg; //Max Damage
+	int eMxSDist; //Max Scan Dist
+	int eMxTDist; //Max Target Distance
+	int eTTime; //Time to Target in ms
+	float ePReq; //Primary Power Requirement
+	float eCReq; //CPU Requirement
+	float eRReq; //RAM Requirement
+	float eRPCon; //Rate of Power Consumption (some weapons/shield/stc)
+	float eIPCon; //Initial Power Consumption (powering up cost; different from continuous drain)
+	float eSDRed; //Shield damage reduction (for shield hardeners)
+	float eMThrust; //Max thrust (acceleration; afterburners)
+	float eMSpeed; //Max additional speed (afterburners)
+	float eRRate; //Recharge Rate (multiple uses)
+	float eDTime; //Delay time (not sure)
+	
+	long long eXCost;
+	long long eRCost;
+	long long eDiCost;
+	long long eDCost;
+	long long eLCost;
+	long long eUCost;
+	long long ePlCost;
+	long long eNWCost;
+};
+
 struct sequipment
 {
 	int seID; //ID
 	string seName; //Name
+	string seDesc; //Description
+	string seType; //Type
+	string seClass; //Class
+	int seTLevel; //Tech Level
 	int seTTime; //Time to Target in ms
 	int seMTargs; //Max Targets
 	float sePReq; //Primary Power Requirement
