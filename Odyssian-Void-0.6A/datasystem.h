@@ -47,6 +47,7 @@ Version:
 1.33 - 07/10/2015
 1.34 - 07/13/2015
 1.35 - 10/09/2015
+1.36 - 02/19/2016
 
 Changes:
 1.0:
@@ -193,6 +194,12 @@ Changes:
 
 1.35:
 -Started refactoring data getter classes
+
+1.36:
+-Started reworking rData due to recent changes by breaking out Ship Equipment handling per equipment type.
+-Started adding in functionality for getting, storing, and passing game settings data from the database.
+-Added vectors to store all types of ship equipment.
+-Modified existing hardpoint vectors to work with the new slot system.
 
 
 End File Header*/
@@ -488,6 +495,7 @@ private:
 	vector<skill> skills;
 	vector<req> reqs;
 	vector<sequipment> sEquipment;
+	vector<settings> sSettings;
 
 	//Save/Load Vectors
 	vector<playerData> pData;

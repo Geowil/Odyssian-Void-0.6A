@@ -900,7 +900,7 @@ void dataSystem::rData(string table, string operation, int ID)
 
 	if (table == "Ship")
 	{
-		db_ds.tableTAccess("Equipment_Data");
+		db_ds.tableTAccess("Ships");
 		db_ds.createStatement(ID, operation);
 
 		if (ships.size() > 0)
@@ -914,7 +914,7 @@ void dataSystem::rData(string table, string operation, int ID)
 
 	else if (table == "Weapon")
 	{
-		db_ds.tableTAccess("Equipment_Data");
+		db_ds.tableTAccess("Weapons");
 		db_ds.createStatement(ID, operation);
 
 		if (weapons.size() > 0)
@@ -995,7 +995,7 @@ void dataSystem::rData(string table, string operation, int ID)
 
 	else if (table == "PShield")
 	{
-		db_ds.tableTAccess("Equipment_Data");
+		db_ds.tableTAccess("PShields");
 		db_ds.createStatement(ID, operation);
 
 		if (pShield.size() > 0)
@@ -1009,7 +1009,7 @@ void dataSystem::rData(string table, string operation, int ID)
 
 	else if (table == "PDefense")
 	{
-		db_ds.tableTAccess("Equipment_Data");
+		db_ds.tableTAccess("ODPlatforms");
 		db_ds.createStatement(ID, operation);
 
 		if (pDefense.size() > 0)
@@ -1102,9 +1102,9 @@ void dataSystem::rData(string table, string operation, int ID)
 		dB_ds.returnRQResults(reqs);
 	}
 
-	else if (table == "Ship_Equipment")
+	else if (table == "CPU")
 	{
-		db_ds.tableTAccess("Equipment_Data");
+		db_ds.tableTAccess("Cpus");
 		db_ds.createStatement(ID, operation);
 
 		if (sEquipment.size() > 0)
@@ -1114,6 +1114,146 @@ void dataSystem::rData(string table, string operation, int ID)
 
 		db_ds.getSEResults(&bErrors);
 		db_ds.returnSEResults(sEquipment);
+	}
+
+	else if (table == "RAM")
+	{
+		db_ds.tableTAccess("Ram");
+		db_ds.createStatement(ID, operation);
+
+		if (sEquipment.size() > 0)
+		{
+			sEquipment.clear();
+		}
+
+		db_ds.getSEResults(&bErrors);
+		db_ds.returnSEResults(sEquipment);
+	}
+
+	else if (table == "Engine")
+	{
+		db_ds.tableTAccess("Engines");
+		db_ds.createStatement(ID, operation);
+
+		if (sEquipment.size() > 0)
+		{
+			sEquipment.clear();
+		}
+
+		db_ds.getSEResults(&bErrors);
+		db_ds.returnSEResults(sEquipment);
+	}
+
+	else if (table == "PowerSys")
+	{
+		db_ds.tableTAccess("Power_Systems");
+		db_ds.createStatement(ID, operation);
+
+		if (sEquipment.size() > 0)
+		{
+			sEquipment.clear();
+		}
+
+		db_ds.getSEResults(&bErrors);
+		db_ds.returnSEResults(sEquipment);
+	}
+
+	else if (table == "SPSys")
+	{
+		db_ds.tableTAccess("Capacitors");
+		db_ds.createStatement(ID, operation);
+
+		if (sEquipment.size() > 0)
+		{
+			sEquipment.clear();
+		}
+
+		db_ds.getSEResults(&bErrors);
+		db_ds.returnSEResults(sEquipment);
+	}
+
+	else if (table == "WFGen")
+	{
+		db_ds.tableTAccess("WFGens");
+		db_ds.createStatement(ID, operation);
+
+		if (sEquipment.size() > 0)
+		{
+			sEquipment.clear();
+		}
+
+		db_ds.getSEResults(&bErrors);
+		db_ds.returnSEResults(sEquipment);
+	}
+
+	else if (table == "WTSys")
+	{
+		db_ds.tableTAccess("WTSystems");
+		db_ds.createStatement(ID, operation);
+
+		if (sEquipment.size() > 0)
+		{
+			sEquipment.clear();
+		}
+
+		db_ds.getSEResults(&bErrors);
+		db_ds.returnSEResults(sEquipment);
+	}
+
+	else if (table == "SM")
+	{
+		db_ds.tableTAccess("SMatrices");
+		db_ds.createStatement(ID, operation);
+
+		if (sEquipment.size() > 0)
+		{
+			sEquipment.clear();
+		}
+
+		db_ds.getSEResults(&bErrors);
+		db_ds.returnSEResults(sEquipment);
+	}
+
+	else if (table == "AP")
+	{
+		db_ds.tableTAccess("APlating");
+		db_ds.createStatement(ID, operation);
+
+		if (sEquipment.size() > 0)
+		{
+			sEquipment.clear();
+		}
+
+		db_ds.getSEResults(&bErrors);
+		db_ds.returnSEResults(sEquipment);
+	}
+
+	else if (table == "HSS")
+	{
+		db_ds.tableTAccess("HSStructure");
+		db_ds.createStatement(ID, operation);
+
+		if (sEquipment.size() > 0)
+		{
+			sEquipment.clear();
+		}
+
+		db_ds.getSEResults(&bErrors);
+		db_ds.returnSEResults(sEquipment);
+	}
+
+	else if (table == "Settings")
+	{
+		db_ds.tableTAccess("Settings");
+		db_ds.createStatement(ID, operation);
+
+		if (sSettings.size() > 0)
+		{
+			sSettings.clear();
+		}
+
+		db_ds.getSSResults(&bErrors);
+		db_ds.returnSSResults(sSettings);
 	}
 
 	db_ds.closeDB(&bErrors);

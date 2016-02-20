@@ -16,17 +16,19 @@ Version:
 
 Changes:
 1.0:
--Changed out 
+-Changed out new settings files with gVars and just renamed the name space.
+-Removed old getCData code as it is not needed now that Boost will no longer be used.  Leave boost refs in place in case they are needed in the future for something though.
+-Started recoding getCData.
 
 
 End File Header*/
 
-#ifndef GLOBALVARS_H
-#define GLOBALVARS_H
+#ifndef SETTINGS_H
+#define SETTINGS_H
 
 #include <string>
 #include <vector>
-//#include "g_structs.h"
+#include "g_structs.h"
 
 
 using std::string;
@@ -34,27 +36,7 @@ using std::vector;
 
 namespace gS
 {
-
-	void Setting(string name, string val, bool bIsVect);
-	void Setting(string name, int val, bool bIsVect);
-	void Setting(string name, float val, bool bIsVect);
-	void Setting(string name, long long val, bool bIsVect);
-
-	
-	string setName;
-	int setIVal;
-	float setFVal;
-	string setSVal;
-
-	vector<string> setVSVal;
-	vector<int> setVIVal;
-	vector<float> setVFVal;
-	vector<long long> setVI64Val;
-};
-#endif;
-
-
-	/*void getCData(); //Get the config data from the ini file
+	void getCData(); //Get the config data from the database
 	void printData(); //Print out loaded data
 	void setNIValues(); //Deal with imported lists
 	void setRange(Range& r, string idata, string delimiter, string type);
@@ -325,7 +307,7 @@ namespace gS
 	extern sData sd;
 
 	//Vectors
-	extern vector<string> sClasses; //Ship Classes
+	 vector<string> sClasses; //Ship Classes
 	extern vector<string> eRanks; //Entity Ranks
 	extern vector<string> rNames; //Race Names
 	extern vector<string> rENames; //Race Empire Names
@@ -347,7 +329,7 @@ namespace gS
 	extern int i1, i2, i3, i4, i5; //For for loops
 	extern int size1, size2, size3, size4; //Store vector size
 	extern vector<string> temp1, temp2, temp3, temp4, temp5, temp6; //For vector imports that have to be cast to another type
-	extern string tempstr1, tempstr2, tempstr3, tempstr4, tempstr5, tempstr6, tempstr7;*/
+	extern string tempstr1, tempstr2, tempstr3, tempstr4, tempstr5, tempstr6, tempstr7;
 
 
 };

@@ -1,5 +1,6 @@
 #include "settings.h"
 #include "debug.h"
+#include "datasystem.h"
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
@@ -13,65 +14,20 @@ using std::string;
 using std::endl;
 using std::cout;
 using std::ifstream;
-using std::to_string; 
+using std::to_string;
 using std::vector;
 //using boost::split;
 
 //namespace pOps = boost::program_options;
 
 Debug d_gv;
-
+dataSystem ds_gs;
 
 namespace gS
-{	
-	void Setting(string name, string val, bool bIsVect) {
+{
 
-	}
-
-	void Setting(string name, int val, bool bIsVect) {
-
-	}
-
-	void Setting(string name, float val, bool bIsVect) {
-
-	}
-
-	void Setting(string name, long long val, bool bIsVect) {
-
-	}
-
-		/*catch (const pOps::error& e)
-		{
-			//std::cerr << e.what() << std::endl;
-
-			string file = __FILE__;
-			string bLocale = "File: " + file + "  Line: ";
-
-			string time = __TIME__;
-			string date = __DATE__;
-
-			string bTDate = date + "  " + time;
-
-			d_gv.createBReport("Configuration File Error", e.what(), bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
-		}
-
-		if (vm.size() > 0)
-		{
-			//Now deal with some of the values that we could not add through options (namely the low end of the population randoms for planets)
-
-			setNIValues();
-
-			cout << "Data successfully loaded from configuration file." << endl;
-			system("Pause");
-			system("CLS");
-		}
-
-		else
-		{
-			cout << "Data was not successfully loaded from configuration file.  Please check the error log for more details" << endl;
-			system("Pause");
-			system("CLS");
-		}
+	void getCData() {
+		ds_gs.rData("Settings", "select from", 0);
 	}
 
 	void printData()
@@ -1005,5 +961,5 @@ namespace gS
 	vector<wIDRange> weaps;
 	vector<string> temp1, temp2, temp3, temp4, temp5, temp6; //Temp vectors for storing strings to be cast to something else
 	vector<string> storage; //Holds data from second and third splits to be used to insert that data into a temp vector for later use
-	string tempstr1, tempstr2, tempstr3, tempstr4, tempstr5, tempstr6, tempstr7;*/
+	string tempstr1, tempstr2, tempstr3, tempstr4, tempstr5, tempstr6, tempstr7;
 }

@@ -17,6 +17,9 @@ Changes:
 -Modified existing structures to align to recent database changes.
 -Added new struct to contain game settings once the offloading of settings from the ini file into the database is completed.
 
+1.1:
+-Changed settings struct so that it works with the gVars concept.  Will contain every setting which is then passed to namespace and formatted as required.
+
 
 End File Header*/
 
@@ -32,11 +35,17 @@ using std::vector;
 struct settings
 {
 	//game settings imported here
-	string setKey; //Setting Key Value
+	string sDTypes; //Difficulty Types
+	vector<string> sDSettings; //Vector that will contain a list of - delimited key/value pairs for the difficulty chosen by the player.
+	string sSSIDs; //- delimited range of starter ship IDs
+	string sSCNames; //, delimited list of ship classes
+	string sWCNames; //, delimited list of weapon classes
 	float setFVal; //Setting Float Value
 	int setIVal; //Setting Int Value
 	long long setI64Val; //Setting Int64 Value
 	string setS; //Setting String Value
+	long long sSNames; //Stores the number of system names in the database
+
 };
 
 struct ship
