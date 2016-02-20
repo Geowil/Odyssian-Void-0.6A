@@ -1233,13 +1233,13 @@ void dataSystem::rData(string table, string operation, int ID)
 		db_ds.tableTAccess("HSStructure");
 		db_ds.createStatement(ID, operation);
 
-		if (sHHStruct.size() > 0)
+		if (sHSStruct.size() > 0)
 		{
-			sHHStruct.clear();
+			sHSStruct.clear();
 		}
 
 		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sHHStruct);
+		db_ds.returnSEResults(sHSStruct);
 	}
 
 	else if (table == "Settings")

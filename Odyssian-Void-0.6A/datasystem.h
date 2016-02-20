@@ -496,6 +496,18 @@ private:
 	vector<req> reqs;
 	vector<sequipment> sEquipment;
 	vector<settings> sSettings;
+	vector<cpu> sCpu;
+	vector<ram> sRam;
+	vector<psystem> sPSystem;
+	vector<cap> sCapacitor;
+	vector<smatrix> sSMatrix;
+	vector<wfg> sWFGen;
+	vector<wts> sWTSystem;
+	vector<seng> sEngine;
+	vector<aplate> sAPlating;
+	vector<hsstruct> sHSStruct;
+	vector<smatrix> sSMatrix;
+
 
 	//Save/Load Vectors
 	vector<playerData> pData;
