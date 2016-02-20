@@ -36,7 +36,7 @@ struct settings
 	float setFVal; //Setting Float Value
 	int setIVal; //Setting Int Value
 	long long setI64Val; //Setting Int64 Value
-	string setSVal; //Setting String Value
+	string setS; //Setting String Value
 };
 
 struct ship
