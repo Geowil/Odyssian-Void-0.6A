@@ -1107,13 +1107,13 @@ void dataSystem::rData(string table, string operation, int ID)
 		db_ds.tableTAccess("Cpus");
 		db_ds.createStatement(ID, operation);
 
-		if (sEquipment.size() > 0)
+		if (sCpu.size() > 0)
 		{
-			sEquipment.clear();
+			sCpu.clear();
 		}
 
 		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sEquipment);
+		db_ds.returnSEResults(sCpu);
 	}
 
 	else if (table == "RAM")
@@ -1121,13 +1121,13 @@ void dataSystem::rData(string table, string operation, int ID)
 		db_ds.tableTAccess("Ram");
 		db_ds.createStatement(ID, operation);
 
-		if (sEquipment.size() > 0)
+		if (sRam.size() > 0)
 		{
-			sEquipment.clear();
+			sRam.clear();
 		}
 
 		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sEquipment);
+		db_ds.returnSEResults(sRam);
 	}
 
 	else if (table == "Engine")
@@ -1135,13 +1135,13 @@ void dataSystem::rData(string table, string operation, int ID)
 		db_ds.tableTAccess("Engines");
 		db_ds.createStatement(ID, operation);
 
-		if (sEquipment.size() > 0)
+		if (sEngine.size() > 0)
 		{
-			sEquipment.clear();
+			sEngine.clear();
 		}
 
 		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sEquipment);
+		db_ds.returnSEResults(sEngine);
 	}
 
 	else if (table == "PowerSys")
@@ -1149,13 +1149,13 @@ void dataSystem::rData(string table, string operation, int ID)
 		db_ds.tableTAccess("Power_Systems");
 		db_ds.createStatement(ID, operation);
 
-		if (sEquipment.size() > 0)
+		if (sPSystem.size() > 0)
 		{
-			sEquipment.clear();
+			sPSystem.clear();
 		}
 
 		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sEquipment);
+		db_ds.returnSEResults(sPSystem);
 	}
 
 	else if (table == "SPSys")
@@ -1163,13 +1163,13 @@ void dataSystem::rData(string table, string operation, int ID)
 		db_ds.tableTAccess("Capacitors");
 		db_ds.createStatement(ID, operation);
 
-		if (sEquipment.size() > 0)
+		if (sCap.size() > 0)
 		{
-			sEquipment.clear();
+			sCap.clear();
 		}
 
 		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sEquipment);
+		db_ds.returnSEResults(sCap);
 	}
 
 	else if (table == "WFGen")
@@ -1177,13 +1177,13 @@ void dataSystem::rData(string table, string operation, int ID)
 		db_ds.tableTAccess("WFGens");
 		db_ds.createStatement(ID, operation);
 
-		if (sEquipment.size() > 0)
+		if (sWFgen.size() > 0)
 		{
-			sEquipment.clear();
+			sWFgen.clear();
 		}
 
 		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sEquipment);
+		db_ds.returnSEResults(sWFgen);
 	}
 
 	else if (table == "WTSys")
@@ -1191,13 +1191,13 @@ void dataSystem::rData(string table, string operation, int ID)
 		db_ds.tableTAccess("WTSystems");
 		db_ds.createStatement(ID, operation);
 
-		if (sEquipment.size() > 0)
+		if (sWTSystem.size() > 0)
 		{
-			sEquipment.clear();
+			sWTSystem.clear();
 		}
 
 		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sEquipment);
+		db_ds.returnSEResults(sWTSystem);
 	}
 
 	else if (table == "SM")
@@ -1205,13 +1205,13 @@ void dataSystem::rData(string table, string operation, int ID)
 		db_ds.tableTAccess("SMatrices");
 		db_ds.createStatement(ID, operation);
 
-		if (sEquipment.size() > 0)
+		if (sSMatrix.size() > 0)
 		{
-			sEquipment.clear();
+			sSMatrix.clear();
 		}
 
 		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sEquipment);
+		db_ds.returnSEResults(sSMatrix);
 	}
 
 	else if (table == "AP")
@@ -1219,13 +1219,13 @@ void dataSystem::rData(string table, string operation, int ID)
 		db_ds.tableTAccess("APlating");
 		db_ds.createStatement(ID, operation);
 
-		if (sEquipment.size() > 0)
+		if (sAPlating.size() > 0)
 		{
-			sEquipment.clear();
+			sAPlating.clear();
 		}
 
 		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sEquipment);
+		db_ds.returnSEResults(sAPlating);
 	}
 
 	else if (table == "HSS")
@@ -1233,13 +1233,13 @@ void dataSystem::rData(string table, string operation, int ID)
 		db_ds.tableTAccess("HSStructure");
 		db_ds.createStatement(ID, operation);
 
-		if (sEquipment.size() > 0)
+		if (sHHStruct.size() > 0)
 		{
-			sEquipment.clear();
+			sHHStruct.clear();
 		}
 
 		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sEquipment);
+		db_ds.returnSEResults(sHHStruct);
 	}
 
 	else if (table == "Settings")
