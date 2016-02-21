@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <ctime>
 
-#include "globalvars.h"
+#include "settings.h"
 #include "random.h"
 //#include "msgproc.h"
 //#include "datasystem.h"
@@ -19,7 +19,7 @@
 
 
 using namespace std;
-namespace gv = gVars;
+namespace gs = gS;
 
 //Game mGame_m;
 //Player mPlayer;
@@ -49,8 +49,8 @@ int main()
 	string eResult; //Event result; used for any time a loop is done where multiple outcomes, more than two, can be achieved
 
 	//Get data from configuration file
-	gv::getCData();
-	gv::printData();
+	gs::getCData();
+	gs::printData();
 	
 	/*mp_m.cdPrint();
 

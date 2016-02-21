@@ -1112,8 +1112,8 @@ void dataSystem::rData(string table, string operation, int ID)
 			sCpu.clear();
 		}
 
-		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sCpu);
+		db_ds.getCPUResults(&bErrors);
+		db_ds.returnCPUResults(sCpu);
 	}
 
 	else if (table == "RAM")
@@ -1126,8 +1126,8 @@ void dataSystem::rData(string table, string operation, int ID)
 			sRam.clear();
 		}
 
-		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sRam);
+		db_ds.getRAMResults(&bErrors);
+		db_ds.returnRAMResults(sRam);
 	}
 
 	else if (table == "Engine")
@@ -1140,8 +1140,8 @@ void dataSystem::rData(string table, string operation, int ID)
 			sEngine.clear();
 		}
 
-		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sEngine);
+		db_ds.getENGResults(&bErrors);
+		db_ds.returnENGResults(sEngine);
 	}
 
 	else if (table == "PowerSys")
@@ -1154,8 +1154,8 @@ void dataSystem::rData(string table, string operation, int ID)
 			sPSystem.clear();
 		}
 
-		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sPSystem);
+		db_ds.getPSResults(&bErrors);
+		db_ds.returnPSResults(sPSystem);
 	}
 
 	else if (table == "SPSys")
@@ -1168,8 +1168,8 @@ void dataSystem::rData(string table, string operation, int ID)
 			sCap.clear();
 		}
 
-		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sCap);
+		db_ds.getSPSResults(&bErrors);
+		db_ds.returnSPSResults(sCap);
 	}
 
 	else if (table == "WFGen")
@@ -1182,8 +1182,8 @@ void dataSystem::rData(string table, string operation, int ID)
 			sWFgen.clear();
 		}
 
-		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sWFgen);
+		db_ds.getWFGResults(&bErrors);
+		db_ds.returnWFGResults(sWFgen);
 	}
 
 	else if (table == "WTSys")
@@ -1196,8 +1196,8 @@ void dataSystem::rData(string table, string operation, int ID)
 			sWTSystem.clear();
 		}
 
-		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sWTSystem);
+		db_ds.getWTSResults(&bErrors);
+		db_ds.returnWTSResults(sWTSystem);
 	}
 
 	else if (table == "SM")
@@ -1210,8 +1210,8 @@ void dataSystem::rData(string table, string operation, int ID)
 			sSMatrix.clear();
 		}
 
-		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sSMatrix);
+		db_ds.getSMResults(&bErrors);
+		db_ds.returnSMResults(sSMatrix);
 	}
 
 	else if (table == "AP")
@@ -1224,8 +1224,8 @@ void dataSystem::rData(string table, string operation, int ID)
 			sAPlating.clear();
 		}
 
-		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sAPlating);
+		db_ds.getAPResults(&bErrors);
+		db_ds.returnAPResults(sAPlating);
 	}
 
 	else if (table == "HSS")
@@ -1238,8 +1238,8 @@ void dataSystem::rData(string table, string operation, int ID)
 			sHSStruct.clear();
 		}
 
-		db_ds.getSEResults(&bErrors);
-		db_ds.returnSEResults(sHSStruct);
+		db_ds.getHSSResults(&bErrors);
+		db_ds.returnHSSResults(sHSStruct);
 	}
 
 	else if (table == "Settings")

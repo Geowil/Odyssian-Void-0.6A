@@ -11,7 +11,8 @@ File Description:
 Created On:  Friday, 02/19/2016
 
 Version:
-1.0 - 02/192016
+1.0 - 02/19/2016
+1.1 - 02/20/2016
 
 
 Changes:
@@ -19,6 +20,10 @@ Changes:
 -Changed out new settings files with gVars and just renamed the name space.
 -Removed old getCData code as it is not needed now that Boost will no longer be used.  Leave boost refs in place in case they are needed in the future for something though.
 -Started recoding getCData.
+
+1.1:
+-Removed many class variables that are no longer neeed because we are not storing item ID ranges any more.
+-Continued recoding getCData.
 
 
 End File Header*/
@@ -85,46 +90,12 @@ namespace gS
 
 	//Configuration Variables
 
-	//Equip ID Ranges 
-	extern string shields; //Holds imported planetary shield data
-	extern vector<string> shields2; //Holds strings after split on comma
-	extern vector<psIDRange> psIDS; //Planetary Shield Item ID Range
-	extern string defenses; //Holds imported planetary defense data
-	extern vector<string> defenses2; //Holds strings after split on comma
-	extern vector<pdIDRange> pdIDS; //Planetary Defense Item ID Range
-	extern string clones; //Holds imported clone data
-	extern vector<string> clones2; //Holds strings after split on comma
-	extern Range cIDS; //Clone Item ID Range
+	
 
 	extern string sships;
 	extern Range ssIDS; //Starter Ship Range
 
-	//Ship ID Ranges By Class
-	extern string ships; //Holds imported ship data
-	extern vector<string> ships2; //Holds strings after split on comma
-	extern vector<sIDRange> sIDS; //Vector of ship class ID ranges
 
-	//Weapon ID Ranges By Class
-	extern string weapons; //Holds imported weapons data
-	extern vector<string> weapons2; //Holds split weapon data
-	extern string lasers; //Holds imported laser data
-	extern vector<wIDRange> wLIDS; //Vector of laser weapon class ID ranges
-	extern string missiles; //Holds imported missile data
-	extern vector<wIDRange> wMIDS; //Vector of missile weapon class ID ranges
-	extern string bombs; //Holds imported bomb data
-	extern vector<wIDRange> wBIDS; //Vector of bomb weapon class ID ranges
-	extern string rails; //Holds imported rail data
-	extern vector<wIDRange> wRIDS; //Vector of rail weapon class ID ranges
-	extern string heavies; //Holds imported heavy weapons data
-	extern vector<wIDRange> wHIDS; //Vector of heavy weapon class ID ranges
-	extern string mlasers; //Holds imported mining laser data
-	extern vector<string> mlasers2; //Holds split mining laser data
-	extern vector<wIDRange> wNSMLIDS; //Vector of non-specific mining laser class ID ranges
-
-	extern vector<vector<wIDRange>> wIDS; //Stores finalized weapon ID ranges; has to be done like this for complete modularity.  Number of elements will be related to value of wctypes and wcnames
-
-	//Mining Barge Mining Laser ID Range
-	extern Range mlIDS;
 
 
 	//Ship Related Values
@@ -288,11 +259,11 @@ namespace gS
 	extern float cRBRH; //Half
 
 
-	//Damage Related Values
+	/*Damage Related Values
 	extern int dTTypes; //Number of damage types
 	extern string dTNames; //Comma-delimited string of damage type names
 	extern string dTEDP; //Comma-delimited string of extra damage percentages
-	extern string dDPT; //Comma-delimited string of turns for turn based damage
+	extern string dDPT; //Comma-delimited string of turns for turn based damage*/
 
 	//Skill Related Values
 	extern string skillstr;
@@ -311,18 +282,10 @@ namespace gS
 	extern vector<string> eRanks; //Entity Ranks
 	extern vector<string> rNames; //Race Names
 	extern vector<string> rENames; //Race Empire Names
-	extern vector<string> sDNames; //Secondary Damage Names
-	extern vector<float>  sDDPerc; //Secondary Damage Damage Percentges
-	extern vector<int>	   sDETurns; //Secondary Damage Effect Turns
 	extern vector<string> gRNames; //Resource Names
 	extern vector<string> gDNames; //Diplomatic State Names
-	extern vector<int>	gMMissions; //Main mission line
 	extern vector<aData>	gPAData; //Vector to hold data on asteroids
 	//template<typename t> extern vector<t> mVector; //A magical vector that can hold any data type
-	extern vector<sIDRange> sirV;
-	extern vector<wIDRange> wirV;
-	extern vector<psIDRange> sidV;
-	extern vector<pdIDRange> didV;
 	extern vector<string> iAData; //Imported Asteroid Data
 
 	//Misc

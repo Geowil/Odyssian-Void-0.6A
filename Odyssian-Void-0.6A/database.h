@@ -11,6 +11,7 @@ Created On:  Sunday, January 31, 2016 (day this header was added)
 Version:
 1.0 - 01/30/2016
 1.1 - 01/31/2016
+1.2 - 02/20/2016
 
 Changes:
 1.0:
@@ -18,6 +19,12 @@ Changes:
 
 1.1:
 -Updated the ship, equipment, and other database query functions to account for recent database changes.
+
+1.2:
+-Added new functions for ship equipment data now that they have been boken out into each type in the database.
+-Added new vectors for ship equipment.
+-Added new functions for settings data which is now to be stored in the database.
+-Added new vector for settings data.
 
 End File Header*/
 
@@ -234,6 +241,7 @@ private:
 	vector<resource> resResults; //Resource
 	vector<ore> oResults; //Ore
 	vector<skill> skResults; //Skill
+	vector<
 
 	//Save File (Load)
 	vector<planetData> plDataResults;
@@ -318,6 +326,11 @@ private:
 	bool	sqlB1;
 	bool	sqlB2;
 	bool	sqlB3;
+	bool	sqlB4;
+	bool	sqlB5;
+	bool	sqlB6;
+	bool	sqlB7;
+	bool	sqlB8;
 
 
 

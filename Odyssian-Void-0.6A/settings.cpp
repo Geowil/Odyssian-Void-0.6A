@@ -27,7 +27,11 @@ namespace gS
 {
 
 	void getCData() {
+		//Get stage 1 settings data from the database
 		ds_gs.rData("Settings", "select from", 0);
+
+		//Process stage 1 data
+
 	}
 
 	void printData()
@@ -915,15 +919,15 @@ namespace gS
 	float cRBRH; //Half
 
 
-	//Damage Related Values
+	//Change the fundamental underlying system for these so that there are various effects that can be used within the game code which are defined in the database using specific kinds of topics (based on bottom-level statistics for ships or other objects).  These can then be used by modders for secondary damage effects.
+	/*Damage Related Values
 	int dTTypes; //Number of damage types
 	string dTNames; //Comma-delimited string of damage type names
 	string dTEDP; //Comma-delimited string of extra damage percentages
 	string dDPT; //Comma-delimited string of turns for turn based damage
 	vector<string> sDNames; //Secondary Damage Names
 	vector<float>  sDDPerc; //Secondary Damage Damage Percentges
-	vector<int>	   sDETurns; //Secondary Damage Effect Turns
-
+	vector<int>	   sDETurns; //Secondary Damage Effect Turns*/
 
 	//Skill Related Values
 	string skillstr;
@@ -931,10 +935,6 @@ namespace gS
 
 	//Vectors
 	vector<string> sClasses;
-	vector<sIDRange> sirV;
-	vector<wIDRange> wirV;
-	vector<psIDRange> sidV;
-	vector<pdIDRange> didV;
 	vector<aData> gPAData;
 	vector<string> iAData; //Imported Asteroid Data
 
