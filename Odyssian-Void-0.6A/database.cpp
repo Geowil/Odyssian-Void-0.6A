@@ -2537,6 +2537,233 @@ void Database::returnSkResults(vector<skill>& skills)
 	skResults.clear();
 }
 
+void Database::getCPUResults(bool * bErrors){
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK){
+		result = sqlite3_step(statement);
+
+		if (result == SQLITE_ROW){
+			cols = sqlite3_column_count(statement);
+
+			if (cols != 0){
+				skResults.push_back(skill());
+
+				for (i = 0; i <= cols; i++){
+					switch (i){
+
+					case 1:
+						data = (char*)sqlite3_column_text(statement, i);
+
+						if (data != NULL){
+							skResults.at(0).skName = data;
+							*bErrors = false;
+						}
+
+						else{
+							*bErrors = true;
+							createBInfo();
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+						}
+
+						break;
+
+					case 2:
+						data = (char*)sqlite3_column_text(statement, i);
+
+						if (data != NULL){
+							skResults.at(0).skDesc = data;
+						}
+
+						else{
+							*bErrors = true;
+							createBInfo();
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+						}
+
+						break;
+
+					case 3:
+						data = (char*)sqlite3_column_text(statement, i);
+
+						if (data != NULL){
+							skResults.at(0).skEffect = data;
+						}
+
+						else{
+							*bErrors = true;
+							createBInfo();
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+						}
+
+						break;
+
+					case 4:
+						data = (char*)sqlite3_column_text(statement, i);
+
+						if (data != NULL){
+							skResults.at(0).skType = data;
+						}
+
+						else{
+							*bErrors = true;
+							createBInfo();
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+						}
+
+						break;
+
+					case 5:
+						data = (char*)sqlite3_column_text(statement, i);
+
+						if (data != NULL){
+							skResults.at(0).skSGroup = data;
+						}
+
+						else{
+							*bErrors = true;
+							createBInfo();
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+						}
+
+						break;
+
+					case 6:
+						skResults.at(0).skSG2 = (float)sqlite3_column_double(statement, i);
+						break;
+
+					case 7:
+						skResults.at(0).skTTime = sqlite3_column_int(statement, i);
+
+						break;
+
+					case 8:
+						skResults.at(0).skXCost = sqlite3_column_int(statement, i);
+
+						break;
+
+					case 9:
+						skResults.at(0).skCXPCost = sqlite3_column_int(statement, i);
+
+						break;
+
+					default:
+						break;
+					}
+				}
+			}
+
+			else{
+				*bErrors = true;
+				createBInfo();
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+			}
+		}
+
+		else{
+			*bErrors = true;
+			createBInfo();
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+		}
+	}
+
+	else{
+		*bErrors = true;
+		createBInfo();
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+	}
+
+	finalize(statement, bErrors);
+}
+
+void Database::returnCPUResults(vector<cpu>& sCpu){
+	for (i = 0; i < skResults.size(); i++){
+		skills.push_back(skill());
+
+		skills.at(0).skName = skResults.at(0).skName;
+		skills.at(0).skDesc = skResults.at(0).skDesc;
+		skills.at(0).skEffect = skResults.at(0).skEffect;
+		skills.at(0).skType = skResults.at(0).skType;
+		skills.at(0).skSGroup = skResults.at(0).skSGroup;
+		skills.at(0).skSG2 = skResults.at(0).skSG2;
+		skills.at(0).skTTime = skResults.at(0).skTTime;
+		skills.at(0).skXCost = skResults.at(0).skXCost;
+		skills.at(0).skCXPCost = skResults.at(0).skCXPCost;
+	}
+
+	skResults.clear();
+}
+
+void Database::getRAMResults(bool * bErrors)
+{
+}
+
+void Database::returnRAMResults(vector<ram>& sRam)
+{
+}
+
+void Database::getENGResults(bool * bErrors)
+{
+}
+
+void Database::returnENGResults(vector<eng>& sEng)
+{
+}
+
+void Database::getPSyResults(bool * bErrors)
+{
+}
+
+void Database::returnPSyResults(vector<psys>& sPSystem)
+{
+}
+
+void Database::getSPSResults(bool * bErrors)
+{
+}
+
+void Database::returnSPSResults(vector<spsys>& sCap)
+{
+}
+
+void Database::getWFGResults(bool * bErrors)
+{
+}
+
+void Database::returnWFGResults(vector<wfg>& sWFGen)
+{
+}
+
+void Database::getWTSResults(bool * bErrors)
+{
+}
+
+void Database::returnWTSResults(vector<wts>& sWTSystem)
+{
+}
+
+void Database::getSMResults(bool * bErrors)
+{
+}
+
+void Database::returnSMResults(vector<sm>& sSMatrix)
+{
+}
+
+void Database::getAPResults(bool * bErrors)
+{
+}
+
+void Database::returnAPResults(vector<ap>& sAPlating)
+{
+}
+
+void Database::getHSSResults(bool * bErrors)
+{
+}
+
+void Database::returnHSSResults(vector<hss>& sHSStruct)
+{
+}
+
 void Database::returnReqResults(bool* errors)
 {
 	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)

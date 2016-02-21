@@ -48,6 +48,7 @@ Version:
 1.34 - 07/13/2015
 1.35 - 10/09/2015
 1.36 - 02/19/2016
+1.37 - 02/21/2016
 
 Changes:
 1.0:
@@ -200,6 +201,9 @@ Changes:
 -Started adding in functionality for getting, storing, and passing game settings data from the database.
 -Added vectors to store all types of ship equipment.
 -Modified existing hardpoint vectors to work with the new slot system.
+
+1.37:
+-Continued coding rData function for new changes in database.
 
 
 End File Header*/
@@ -498,15 +502,15 @@ private:
 	vector<settings> sSettings;
 	vector<cpu> sCpu;
 	vector<ram> sRam;
-	vector<psystem> sPSystem;
-	vector<cap> sCapacitor;
-	vector<smatrix> sSMatrix;
+	vector<psys> sPSystem;
+	vector<spsys> sCap;
+	vector<sm> sSMatrix;
 	vector<wfg> sWFGen;
 	vector<wts> sWTSystem;
-	vector<seng> sEngine;
-	vector<aplate> sAPlating;
-	vector<hsstruct> sHSStruct;
-	vector<smatrix> sSMatrix;
+	vector<eng> sEng;
+	vector<ap> sAPlating;
+	vector<hss> sHSStruct;
+	vector<settings> gSettings;
 
 
 	//Save/Load Vectors

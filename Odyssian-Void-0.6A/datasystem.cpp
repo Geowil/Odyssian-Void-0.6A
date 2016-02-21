@@ -1154,8 +1154,8 @@ void dataSystem::rData(string table, string operation, int ID)
 			sPSystem.clear();
 		}
 
-		db_ds.getPSResults(&bErrors);
-		db_ds.returnPSResults(sPSystem);
+		db_ds.getPSyResults(&bErrors);
+		db_ds.returnPSyResults(sPSystem);
 	}
 
 	else if (table == "SPSys")
@@ -1177,13 +1177,13 @@ void dataSystem::rData(string table, string operation, int ID)
 		db_ds.tableTAccess("WFGens");
 		db_ds.createStatement(ID, operation);
 
-		if (sWFgen.size() > 0)
+		if (sWFGen.size() > 0)
 		{
-			sWFgen.clear();
+			sWFGen.clear();
 		}
 
 		db_ds.getWFGResults(&bErrors);
-		db_ds.returnWFGResults(sWFgen);
+		db_ds.returnWFGResults(sWFGen);
 	}
 
 	else if (table == "WTSys")

@@ -12,6 +12,7 @@ Version:
 1.0 - 01/30/2016
 1.1 - 01/31/2016
 1.2 - 02/20/2016
+1.3 - 02/21/2016
 
 Changes:
 1.0:
@@ -25,6 +26,9 @@ Changes:
 -Added new vectors for ship equipment.
 -Added new functions for settings data which is now to be stored in the database.
 -Added new vector for settings data.
+
+1.3:
+-Began coding ship equipment functions
 
 End File Header*/
 
@@ -57,6 +61,10 @@ public:
 	void createStatement(int ID, string operation);
 
 	//Get Data
+
+	//Settings
+	void getSSResults(bool* bErrors);
+	void returnSSResults(vector<settings>& settings);
 
 	//Ship
 	void getSResults(bool* bErrors);
@@ -117,6 +125,48 @@ public:
 	//Skill Data
 	void getSkResults(bool* bErrors);
 	void returnSkResults(vector<skill>& skills);
+
+	//Ship Equipment
+	//CPU
+	void getCPUResults(bool* bErrors);
+	void returnCPUResults(vector<cpu>& sCpu);
+
+	//RAM
+	void getRAMResults(bool* bErrors);
+	void returnRAMResults(vector<ram>& sRam);
+	
+	//Engine
+	void getENGResults(bool* bErrors);
+	void returnENGResults(vector<eng>& sEng);
+	
+	//Power System
+	void getPSyResults(bool* bErrors);
+	void returnPSyResults(vector<psys>& sPSystem);
+	
+	//Capacitor
+	void getSPSResults(bool* bErrors);
+	void returnSPSResults(vector<spsys>& sCap);
+
+	//Warp Field Generator
+	void getWFGResults(bool* bErrors);
+	void returnWFGResults(vector<wfg>& sWFGen);
+
+	//Weapon Targeting System
+	void getWTSResults(bool* bErrors);
+	void returnWTSResults(vector<wts>& sWTSystem);
+
+	//Shield Matrix
+	void getSMResults(bool* bErrors);
+	void returnSMResults(vector<sm>& sSMatrix);
+
+	//Armor Plating
+	void getAPResults(bool* bErrors);
+	void returnAPResults(vector<ap>& sAPlating);
+
+	//Hull Superstructure
+	void getHSSResults(bool* bErrors);
+	void returnHSSResults(vector<hss>& sHSStruct);
+
 
 	//Save File
 
@@ -241,7 +291,18 @@ private:
 	vector<resource> resResults; //Resource
 	vector<ore> oResults; //Ore
 	vector<skill> skResults; //Skill
-	vector<
+	vector<settings> gSResults; //Settings
+	vector<cpu> seCPUResults; //CPU
+	vector<ram> seRAMResults; //RAM
+	vector<psys> sePSysResults; //Power System
+	vector<spsys> seSPSysResults; //Capacitor
+	vector<eng> seEngineResults; //Engine
+	vector<wts> seWTSResults; //Weapon Targeting System
+	vector<wfg> seWFGResults; //Warp Field Generator
+	vector<sm> seSMResults; //Shield Matrix
+	vector<ap> seAPResults; //Armor Plating
+	vector<hss> seHSSResults; //Hull Superstructure
+
 
 	//Save File (Load)
 	vector<planetData> plDataResults;
