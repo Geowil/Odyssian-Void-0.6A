@@ -349,6 +349,7 @@ struct equipment {
 	float eMSpeed; //Max additional speed (afterburners)
 	float eRRate; //Recharge Rate (multiple uses)
 	float eDTime; //Delay time (not sure)
+	float eSG2; //SG2
 	
 	long long eXCost;
 	long long eRCost;
@@ -356,7 +357,7 @@ struct equipment {
 	long long eDCost;
 	long long eLCost;
 	long long eUCost;
-	long long ePlCost;
+	long long ePCost;
 	long long eNWCost;
 };
 
@@ -366,38 +367,17 @@ struct cpu
 	string seName; //Name
 	string seDesc; //Description
 	string seType; //Type
-	string seClass; //Class
-	int seTLevel; //Tech Level
-	int seTTime; //Time to Target in ms
-	int seMTargs; //Max Targets
+	int seTLevel; //Tech Level	
 	float sePReq; //Primary Power Requirement
-	float seCReq; //CPU Requirement
-	float seRReq; //RAM Requirement
-	float seCMax; //RAM - Max Capacity
-	float seSRRate; //Capacitor (Secondary Power System; SPS) Recharge Rate
-	float seRRate; //Recharge Rate for everything else BUT the capacitor (some weapon/shield/etc)
-	float seMAP; //Max Armor Points
-	float seRPCon; //Rate of Power Consumption (some weapons/shield/stc)
-	float seMThrust; //Max Thrust
-	float seNSMax; //Max Speed - Normal
-	float seNPCon; //Power Consumption - Normal
-	float seTRCWgt; //Turn Rate Completion Weighting
-	float seCDrain; //Capacitor Drain per AU
-	int seDTime; //Delay to warp in ms
-	float seSMax; //Max Speed
-	float seIPCon; //Initial Power Consumption (powering up cost; different from continuous drain)
-	float sePMax; //CPU Max Peformance
-	float seMHP; //Max Hull Points
-	float seMSP; //Max Shield Points
-	int seMInit;
-
+	float seCMax; //RAM/CPU/PSys/SPSys - Max Capacity
+	float seSG2; //SG2
 	long long seXCost;
 	long long seRCost;
 	long long seDiCost;
 	long long seDCost;
 	long long seLCost;
 	long long seUCost;
-	long long sePlCost;
+	long long sePCost;
 	long long seNWCost;
 };
 
@@ -407,38 +387,18 @@ struct ram
 	string seName; //Name
 	string seDesc; //Description
 	string seType; //Type
-	string seClass; //Class
 	int seTLevel; //Tech Level
-	int seTTime; //Time to Target in ms
-	int seMTargs; //Max Targets
 	float sePReq; //Primary Power Requirement
 	float seCReq; //CPU Requirement
-	float seRReq; //RAM Requirement
-	float seCMax; //RAM - Max Capacity
-	float seSRRate; //Capacitor (Secondary Power System; SPS) Recharge Rate
-	float seRRate; //Recharge Rate for everything else BUT the capacitor (some weapon/shield/etc)
-	float seMAP; //Max Armor Points
-	float seRPCon; //Rate of Power Consumption (some weapons/shield/stc)
-	float seMThrust; //Max Thrust
-	float seNSMax; //Max Speed - Normal
-	float seNPCon; //Power Consumption - Normal
-	float seTRCWgt; //Turn Rate Completion Weighting
-	float seCDrain; //Capacitor Drain per AU
-	int seDTime; //Delay to warp in ms
-	float seSMax; //Max Speed
-	float seIPCon; //Initial Power Consumption (powering up cost; different from continuous drain)
-	float sePMax; //CPU Max Peformance
-	float seMHP; //Max Hull Points
-	float seMSP; //Max Shield Points
-	int seMInit;
-
+	float seCMax; //RAM/CPU/PSys/SPSys - Max Capacity
+	float seSG2; //SG2
 	long long seXCost;
 	long long seRCost;
 	long long seDiCost;
 	long long seDCost;
 	long long seLCost;
 	long long seUCost;
-	long long sePlCost;
+	long long sePCost;
 	long long seNWCost;
 };
 
@@ -448,30 +408,9 @@ struct psys
 	string seName; //Name
 	string seDesc; //Description
 	string seType; //Type
-	string seClass; //Class
 	int seTLevel; //Tech Level
-	int seTTime; //Time to Target in ms
-	int seMTargs; //Max Targets
-	float sePReq; //Primary Power Requirement
-	float seCReq; //CPU Requirement
-	float seRReq; //RAM Requirement
-	float seCMax; //RAM - Max Capacity
-	float seSRRate; //Capacitor (Secondary Power System; SPS) Recharge Rate
-	float seRRate; //Recharge Rate for everything else BUT the capacitor (some weapon/shield/etc)
-	float seMAP; //Max Armor Points
-	float seRPCon; //Rate of Power Consumption (some weapons/shield/stc)
-	float seMThrust; //Max Thrust
-	float seNSMax; //Max Speed - Normal
-	float seNPCon; //Power Consumption - Normal
-	float seTRCWgt; //Turn Rate Completion Weighting
-	float seCDrain; //Capacitor Drain per AU
-	int seDTime; //Delay to warp in ms
-	float seSMax; //Max Speed
-	float seIPCon; //Initial Power Consumption (powering up cost; different from continuous drain)
-	float sePMax; //CPU Max Peformance
-	float seMHP; //Max Hull Points
-	float seMSP; //Max Shield Points
-	int seMInit;
+	float seCMax; //RAM/CPU/PSys/SPSys - Max Capacity
+	float seSG2; //SG2
 
 	long long seXCost;
 	long long seRCost;
@@ -479,7 +418,7 @@ struct psys
 	long long seDCost;
 	long long seLCost;
 	long long seUCost;
-	long long sePlCost;
+	long long sePCost;
 	long long seNWCost;
 };
 
@@ -489,30 +428,13 @@ struct spsys
 	string seName; //Name
 	string seDesc; //Description
 	string seType; //Type
-	string seClass; //Class
-	int seTLevel; //Tech Level
-	int seTTime; //Time to Target in ms
-	int seMTargs; //Max Targets
 	float sePReq; //Primary Power Requirement
 	float seCReq; //CPU Requirement
 	float seRReq; //RAM Requirement
-	float seCMax; //RAM - Max Capacity
+	float seCMax; //RAM/CPU/PSys/SPSys - Max Capacity
 	float seSRRate; //Capacitor (Secondary Power System; SPS) Recharge Rate
-	float seRRate; //Recharge Rate for everything else BUT the capacitor (some weapon/shield/etc)
-	float seMAP; //Max Armor Points
-	float seRPCon; //Rate of Power Consumption (some weapons/shield/stc)
-	float seMThrust; //Max Thrust
-	float seNSMax; //Max Speed - Normal
-	float seNPCon; //Power Consumption - Normal
-	float seTRCWgt; //Turn Rate Completion Weighting
-	float seCDrain; //Capacitor Drain per AU
-	int seDTime; //Delay to warp in ms
-	float seSMax; //Max Speed
-	float seIPCon; //Initial Power Consumption (powering up cost; different from continuous drain)
-	float sePMax; //CPU Max Peformance
-	float seMHP; //Max Hull Points
-	float seMSP; //Max Shield Points
-	int seMInit;
+	float seSRAmount; //% of cap recharged per seSRRate period
+	float seSG2; //SG2
 
 	long long seXCost;
 	long long seRCost;
@@ -520,7 +442,7 @@ struct spsys
 	long long seDCost;
 	long long seLCost;
 	long long seUCost;
-	long long sePlCost;
+	long long sePCost;
 	long long seNWCost;
 };
 
@@ -530,30 +452,16 @@ struct ap
 	string seName; //Name
 	string seDesc; //Description
 	string seType; //Type
-	string seClass; //Class
 	int seTLevel; //Tech Level
-	int seTTime; //Time to Target in ms
-	int seMTargs; //Max Targets
 	float sePReq; //Primary Power Requirement
 	float seCReq; //CPU Requirement
-	float seRReq; //RAM Requirement
-	float seCMax; //RAM - Max Capacity
-	float seSRRate; //Capacitor (Secondary Power System; SPS) Recharge Rate
-	float seRRate; //Recharge Rate for everything else BUT the capacitor (some weapon/shield/etc)
+	float seRReq; //RAM Requirement	
+	float seRRate; //Recharge/Repair Rate for everything else BUT the capacitor (some weapon/shield/etc)
+	float seRAmount; //% repair/regenerated per seRRate
 	float seMAP; //Max Armor Points
 	float seRPCon; //Rate of Power Consumption (some weapons/shield/stc)
-	float seMThrust; //Max Thrust
-	float seNSMax; //Max Speed - Normal
-	float seNPCon; //Power Consumption - Normal
-	float seTRCWgt; //Turn Rate Completion Weighting
-	float seCDrain; //Capacitor Drain per AU
-	int seDTime; //Delay to warp in ms
-	float seSMax; //Max Speed
-	float seIPCon; //Initial Power Consumption (powering up cost; different from continuous drain)
-	float sePMax; //CPU Max Peformance
-	float seMHP; //Max Hull Points
-	float seMSP; //Max Shield Points
-	int seMInit;
+	float seRDelay; //Delay before recharge/repair starts (for shields and some other things)
+	float seSG2; //SG2
 
 	long long seXCost;
 	long long seRCost;
@@ -561,7 +469,7 @@ struct ap
 	long long seDCost;
 	long long seLCost;
 	long long seUCost;
-	long long sePlCost;
+	long long sePCost;
 	long long seNWCost;
 };
 
@@ -571,30 +479,16 @@ struct sm
 	string seName; //Name
 	string seDesc; //Description
 	string seType; //Type
-	string seClass; //Class
 	int seTLevel; //Tech Level
-	int seTTime; //Time to Target in ms
-	int seMTargs; //Max Targets
 	float sePReq; //Primary Power Requirement
 	float seCReq; //CPU Requirement
 	float seRReq; //RAM Requirement
-	float seCMax; //RAM - Max Capacity
-	float seSRRate; //Capacitor (Secondary Power System; SPS) Recharge Rate
-	float seRRate; //Recharge Rate for everything else BUT the capacitor (some weapon/shield/etc)
-	float seMAP; //Max Armor Points
+	float seRRate; //Recharge/Repair Rate for everything else BUT the capacitor (some weapon/shield/etc)
 	float seRPCon; //Rate of Power Consumption (some weapons/shield/stc)
-	float seMThrust; //Max Thrust
-	float seNSMax; //Max Speed - Normal
-	float seNPCon; //Power Consumption - Normal
-	float seTRCWgt; //Turn Rate Completion Weighting
-	float seCDrain; //Capacitor Drain per AU
-	int seDTime; //Delay to warp in ms
-	float seSMax; //Max Speed
-	float seIPCon; //Initial Power Consumption (powering up cost; different from continuous drain)
-	float sePMax; //CPU Max Peformance
-	float seMHP; //Max Hull Points
+	float seRAmount; //% repair/regenerated per seRRate
+	float seRDelay; //Delay before recharge/repair starts (for shields and some other things)
 	float seMSP; //Max Shield Points
-	int seMInit;
+	float seSG2; //SG2
 
 	long long seXCost;
 	long long seRCost;
@@ -602,7 +496,7 @@ struct sm
 	long long seDCost;
 	long long seLCost;
 	long long seUCost;
-	long long sePlCost;
+	long long sePCost;
 	long long seNWCost;
 };
 
@@ -612,30 +506,17 @@ struct hss
 	string seName; //Name
 	string seDesc; //Description
 	string seType; //Type
-	string seClass; //Class
 	int seTLevel; //Tech Level
-	int seTTime; //Time to Target in ms
-	int seMTargs; //Max Targets
 	float sePReq; //Primary Power Requirement
 	float seCReq; //CPU Requirement
 	float seRReq; //RAM Requirement
-	float seCMax; //RAM - Max Capacity
 	float seSRRate; //Capacitor (Secondary Power System; SPS) Recharge Rate
-	float seRRate; //Recharge Rate for everything else BUT the capacitor (some weapon/shield/etc)
-	float seMAP; //Max Armor Points
+	float seRRate; //Recharge/Repair Rate for everything else BUT the capacitor (some weapon/shield/etc)
 	float seRPCon; //Rate of Power Consumption (some weapons/shield/stc)
-	float seMThrust; //Max Thrust
-	float seNSMax; //Max Speed - Normal
-	float seNPCon; //Power Consumption - Normal
-	float seTRCWgt; //Turn Rate Completion Weighting
-	float seCDrain; //Capacitor Drain per AU
-	int seDTime; //Delay to warp in ms
-	float seSMax; //Max Speed
-	float seIPCon; //Initial Power Consumption (powering up cost; different from continuous drain)
-	float sePMax; //CPU Max Peformance
+	float seRAmount; //% repair/regenerated per seRRate
+	float seRDelay; //Delay before recharge/repair starts (for shields and some other things)
 	float seMHP; //Max Hull Points
-	float seMSP; //Max Shield Points
-	int seMInit;
+	float seSG2; //SG2
 
 	long long seXCost;
 	long long seRCost;
@@ -643,7 +524,7 @@ struct hss
 	long long seDCost;
 	long long seLCost;
 	long long seUCost;
-	long long sePlCost;
+	long long sePCost;
 	long long seNWCost;
 };
 
@@ -653,30 +534,14 @@ struct wfg
 	string seName; //Name
 	string seDesc; //Description
 	string seType; //Type
-	string seClass; //Class
 	int seTLevel; //Tech Level
-	int seTTime; //Time to Target in ms
-	int seMTargs; //Max Targets
 	float sePReq; //Primary Power Requirement
 	float seCReq; //CPU Requirement
 	float seRReq; //RAM Requirement
-	float seCMax; //RAM - Max Capacity
-	float seSRRate; //Capacitor (Secondary Power System; SPS) Recharge Rate
-	float seRRate; //Recharge Rate for everything else BUT the capacitor (some weapon/shield/etc)
-	float seMAP; //Max Armor Points
-	float seRPCon; //Rate of Power Consumption (some weapons/shield/stc)
-	float seMThrust; //Max Thrust
-	float seNSMax; //Max Speed - Normal
-	float seNPCon; //Power Consumption - Normal
-	float seTRCWgt; //Turn Rate Completion Weighting
 	float seCDrain; //Capacitor Drain per AU
 	int seDTime; //Delay to warp in ms
-	float seSMax; //Max Speed
-	float seIPCon; //Initial Power Consumption (powering up cost; different from continuous drain)
-	float sePMax; //CPU Max Peformance
-	float seMHP; //Max Hull Points
-	float seMSP; //Max Shield Points
-	int seMInit;
+	float seSMax; //Max Speed - warp
+	float seSG2; //SG2
 
 	long long seXCost;
 	long long seRCost;
@@ -684,7 +549,7 @@ struct wfg
 	long long seDCost;
 	long long seLCost;
 	long long seUCost;
-	long long sePlCost;
+	long long sePCost;
 	long long seNWCost;
 };
 
@@ -694,30 +559,14 @@ struct wts
 	string seName; //Name
 	string seDesc; //Description
 	string seType; //Type
-	string seClass; //Class
 	int seTLevel; //Tech Level
 	int seTTime; //Time to Target in ms
 	int seMTargs; //Max Targets
 	float sePReq; //Primary Power Requirement
 	float seCReq; //CPU Requirement
 	float seRReq; //RAM Requirement
-	float seCMax; //RAM - Max Capacity
-	float seSRRate; //Capacitor (Secondary Power System; SPS) Recharge Rate
-	float seRRate; //Recharge Rate for everything else BUT the capacitor (some weapon/shield/etc)
-	float seMAP; //Max Armor Points
-	float seRPCon; //Rate of Power Consumption (some weapons/shield/stc)
-	float seMThrust; //Max Thrust
-	float seNSMax; //Max Speed - Normal
-	float seNPCon; //Power Consumption - Normal
-	float seTRCWgt; //Turn Rate Completion Weighting
-	float seCDrain; //Capacitor Drain per AU
-	int seDTime; //Delay to warp in ms
-	float seSMax; //Max Speed
-	float seIPCon; //Initial Power Consumption (powering up cost; different from continuous drain)
-	float sePMax; //CPU Max Peformance
-	float seMHP; //Max Hull Points
-	float seMSP; //Max Shield Points
-	int seMInit;
+	float seMSRng; //Max Scan Range
+	float seSG2; //SG2
 
 	long long seXCost;
 	long long seRCost;
@@ -725,7 +574,7 @@ struct wts
 	long long seDCost;
 	long long seLCost;
 	long long seUCost;
-	long long sePlCost;
+	long long sePCost;
 	long long seNWCost;
 };
 
@@ -735,30 +584,17 @@ struct eng
 	string seName; //Name
 	string seDesc; //Description
 	string seType; //Type
-	string seClass; //Class
 	int seTLevel; //Tech Level
-	int seTTime; //Time to Target in ms
-	int seMTargs; //Max Targets
 	float sePReq; //Primary Power Requirement
 	float seCReq; //CPU Requirement
 	float seRReq; //RAM Requirement
 	float seCMax; //RAM - Max Capacity
-	float seSRRate; //Capacitor (Secondary Power System; SPS) Recharge Rate
-	float seRRate; //Recharge Rate for everything else BUT the capacitor (some weapon/shield/etc)
-	float seMAP; //Max Armor Points
-	float seRPCon; //Rate of Power Consumption (some weapons/shield/stc)
 	float seMThrust; //Max Thrust
 	float seNSMax; //Max Speed - Normal
 	float seNPCon; //Power Consumption - Normal
 	float seTRCWgt; //Turn Rate Completion Weighting
-	float seCDrain; //Capacitor Drain per AU
-	int seDTime; //Delay to warp in ms
-	float seSMax; //Max Speed
-	float seIPCon; //Initial Power Consumption (powering up cost; different from continuous drain)
-	float sePMax; //CPU Max Peformance
-	float seMHP; //Max Hull Points
-	float seMSP; //Max Shield Points
 	int seMInit;
+	float seSG2; //SG2
 
 	long long seXCost;
 	long long seRCost;
@@ -766,50 +602,10 @@ struct eng
 	long long seDCost;
 	long long seLCost;
 	long long seUCost;
-	long long sePlCost;
+	long long sePCost;
 	long long seNWCost;
 };
 
-struct sequipment
-{
-	int seID; //ID
-	string seName; //Name
-	string seDesc; //Description
-	string seType; //Type
-	string seClass; //Class
-	int seTLevel; //Tech Level
-	int seTTime; //Time to Target in ms
-	int seMTargs; //Max Targets
-	float sePReq; //Primary Power Requirement
-	float seCReq; //CPU Requirement
-	float seRReq; //RAM Requirement
-	float seCMax; //RAM - Max Capacity
-	float seSRRate; //Capacitor (Secondary Power System; SPS) Recharge Rate
-	float seRRate; //Recharge Rate for everything else BUT the capacitor (some weapon/shield/etc)
-	float seMAP; //Max Armor Points
-	float seRPCon; //Rate of Power Consumption (some weapons/shield/stc)
-	float seMThrust; //Max Thrust
-	float seNSMax; //Max Speed - Normal
-	float seNPCon; //Power Consumption - Normal
-	float seTRCWgt; //Turn Rate Completion Weighting
-	float seCDrain; //Capacitor Drain per AU
-	int seDTime; //Delay to warp in ms
-	float seSMax; //Max Speed
-	float seIPCon; //Initial Power Consumption (powering up cost; different from continuous drain)
-	float sePMax; //CPU Max Peformance
-	float seMHP; //Max Hull Points
-	float seMSP; //Max Shield Points
-	int seMInit;
-
-	long long seXCost;
-	long long seRCost;
-	long long seDiCost;
-	long long seDCost;
-	long long seLCost;
-	long long seUCost;
-	long long sePlCost;
-	long long seNWCost;
-};
 
 //Save File Table Structs
 struct planetData

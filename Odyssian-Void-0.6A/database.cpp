@@ -2545,16 +2545,15 @@ void Database::getCPUResults(bool * bErrors){
 			cols = sqlite3_column_count(statement);
 
 			if (cols != 0){
-				skResults.push_back(skill());
+				seCPUResults.push_back(cpu());
 
 				for (i = 0; i <= cols; i++){
 					switch (i){
-
 					case 1:
 						data = (char*)sqlite3_column_text(statement, i);
 
 						if (data != NULL){
-							skResults.at(0).skName = data;
+							seCPUResults.at(0).seName = data;
 							*bErrors = false;
 						}
 
@@ -2570,7 +2569,7 @@ void Database::getCPUResults(bool * bErrors){
 						data = (char*)sqlite3_column_text(statement, i);
 
 						if (data != NULL){
-							skResults.at(0).skDesc = data;
+							seCPUResults.at(0).seDesc = data;
 						}
 
 						else{
@@ -2584,11 +2583,11 @@ void Database::getCPUResults(bool * bErrors){
 					case 3:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL){
-							skResults.at(0).skEffect = data;
+						if (data != NULL) {
+							seCPUResults.at(0).seType = data;
 						}
 
-						else{
+						else {
 							*bErrors = true;
 							createBInfo();
 							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
@@ -2597,52 +2596,51 @@ void Database::getCPUResults(bool * bErrors){
 						break;
 
 					case 4:
-						data = (char*)sqlite3_column_text(statement, i);
-
-						if (data != NULL){
-							skResults.at(0).skType = data;
-						}
-
-						else{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
-						}
-
+						seCPUResults.at(0).seTLevel = sqlite3_column_int(statement, i);
 						break;
-
+						
 					case 5:
-						data = (char*)sqlite3_column_text(statement, i);
-
-						if (data != NULL){
-							skResults.at(0).skSGroup = data;
-						}
-
-						else{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
-						}
-
+						seCPUResults.at(0).sePReq = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 6:
-						skResults.at(0).skSG2 = (float)sqlite3_column_double(statement, i);
+						seCPUResults.at(0).seCMax = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 7:
-						skResults.at(0).skTTime = sqlite3_column_int(statement, i);
-
+						seCPUResults.at(0).seSG2 = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 8:
-						skResults.at(0).skXCost = sqlite3_column_int(statement, i);
-
+						seCPUResults.at(0).seXCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 9:
-						skResults.at(0).skCXPCost = sqlite3_column_int(statement, i);
+						seCPUResults.at(0).seRCost = sqlite3_column_int(statement, i);
+						break;
 
+					case 10:
+						seCPUResults.at(0).seDiCost = sqlite3_column_int(statement, i);
+						break;
+
+					case 11:
+						seCPUResults.at(0).seDCost = sqlite3_column_int(statement, i);
+						break;
+
+					case 12:
+						seCPUResults.at(0).seLCost = sqlite3_column_int(statement, i);
+						break;
+
+					case 13:
+						seCPUResults.at(0).seUCost = sqlite3_column_int(statement, i);
+						break;
+
+					case 14:
+						seCPUResults.at(0).sePCost = sqlite3_column_int(statement, i);
+						break;
+
+					case 15:
+						seCPUResults.at(0).seNWCost = sqlite3_column_int(statement, i);
 						break;
 
 					default:
@@ -2676,17 +2674,23 @@ void Database::getCPUResults(bool * bErrors){
 
 void Database::returnCPUResults(vector<cpu>& sCpu){
 	for (i = 0; i < skResults.size(); i++){
-		skills.push_back(skill());
+		sCpu.push_back(cpu());
 
-		skills.at(0).skName = skResults.at(0).skName;
-		skills.at(0).skDesc = skResults.at(0).skDesc;
-		skills.at(0).skEffect = skResults.at(0).skEffect;
-		skills.at(0).skType = skResults.at(0).skType;
-		skills.at(0).skSGroup = skResults.at(0).skSGroup;
-		skills.at(0).skSG2 = skResults.at(0).skSG2;
-		skills.at(0).skTTime = skResults.at(0).skTTime;
-		skills.at(0).skXCost = skResults.at(0).skXCost;
-		skills.at(0).skCXPCost = skResults.at(0).skCXPCost;
+		sCpu.at(0).seName = seCPUResults.at(0).seName;
+		sCpu.at(0).seDesc = seCPUResults.at(0).seDesc;
+		sCpu.at(0).seType = seCPUResults.at(0).seType;
+		sCpu.at(0).seTLevel = seCPUResults.at(0).seTLevel;
+		sCpu.at(0).sePReq = seCPUResults.at(0).sePReq;
+		sCpu.at(0).seCMax = seCPUResults.at(0).seCMax;
+		sCpu.at(0).seSG2 = seCPUResults.at(0).seSG2;
+		sCpu.at(0).seXCost = seCPUResults.at(0).seXCost;
+		sCpu.at(0).seRCost = seCPUResults.at(0).seRCost;
+		sCpu.at(0).seDiCost = seCPUResults.at(0).seDiCost;
+		sCpu.at(0).seDCost = seCPUResults.at(0).seDCost;
+		sCpu.at(0).seLCost = seCPUResults.at(0).seLCost;
+		sCpu.at(0).seUCost = seCPUResults.at(0).seUCost;
+		sCpu.at(0).sePCost = seCPUResults.at(0).sePCost;
+		sCpu.at(0).seNWCost = seCPUResults.at(0).seNWCost;
 	}
 
 	skResults.clear();
