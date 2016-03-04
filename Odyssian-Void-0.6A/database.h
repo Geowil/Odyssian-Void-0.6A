@@ -13,6 +13,7 @@ Version:
 1.1 - 01/31/2016
 1.2 - 02/20/2016
 1.3 - 02/21/2016
+1.4 - 03/04/2016
 
 Changes:
 1.0:
@@ -29,6 +30,13 @@ Changes:
 
 1.3:
 -Began coding ship equipment functions
+
+1.4:
+-Coded the classes to obtain settings data from the database and store it
+-Fixed code structuring for ship query functions
+-Moved comments from ship query functions to settings as these are now the first two methods
+-Changed SC_Log for debug output to OV_Log throughout the cpp file
+-Added new debugging output to all default cases to notify about potential erroneous case values
 
 End File Header*/
 

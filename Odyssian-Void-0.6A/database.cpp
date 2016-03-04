@@ -22,7 +22,7 @@ void Database::openDB(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 1",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 1",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	else
@@ -37,7 +37,7 @@ void Database::openSave(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 1",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 1",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	else
@@ -71,78 +71,154 @@ void Database::createStatement(int iID, string operation)
 
 //All comments on function below apply to all other functions in this class; the comments will only be displayed here
 
-void Database::getSResults(bool* bErrors)
-{
-	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) //Check if the statement can be created
-	{
-		result = sqlite3_step(statement); //Call sqlite3_step to execute the query
+void Database::getSSResults(bool* bErrors) {
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) { //Check if the statement can be created
+		result - sqlite3_step(statement); //Call sqlite3_step to execute the query
 
-		if (result == SQLITE_ROW) //If sqlite3_step returns a row continue
-		{
+		if (result == SQLITE_ROW) { //If sqlite3_step returns a row continue
 			cols = sqlite3_column_count(statement); //Get the number of columns in this row/table
 
-			if (cols != 0) //If the number of columns is greater than zero
-			{
-				sResults.push_back(ship()); //Push back sResults to make a new element; REQUIRED else index out of bunds error thrown
+			if (cols != 0) { //If the number of columns is greater than zero
+				gSResults.push_back(settings()); //Push back gSResults to make a new element; REQUIRED else index out of bunds error thrown
 
-				for (i = 0; i <= cols; i++) //Iterate through the columns
-				{
-					switch(i) //Switch better suited to this than an if/then/else if statement; NOTE: SQLite3 column indecies are ZERO INDEXED, start from 0 if you want the first/primary key column
-					{
-					case 0:
-						sResults.at(0).sID = sqlite3_column_int(statement, i);
-						break;
-
+				for (i = 0; i <= cols; i++) { //Iterate through the columns
+					switch (i) { //Switch better suited to this than an if/then/else if statement; NOTE: SQLite3 column indecies are ZERO INDEXED, start from 0 if you want the first/primary key column
 					case 1:
-						data =  (char*)sqlite3_column_text(statement,i); //Store returned data temporarily for null checking for string returns
+						data = (char*)sqlite3_column_text(statement, i); //Store returned data temporarily for null checking for string returns
 
-						if (data != NULL) //If data is not NULL continue
-						{
-							sResults.at(0).sName = data; //Save data into the vector element
+						if (data != NULL) { //If data is not NULL continue
+							gSResults.at(gSResults.size() - 1).setSName = data; //Save data into the vector element
 							*bErrors = false; //Set to false since no errors occurred
 						}
 
-						else //Else if data IS NULL
-						{
+						else { //Else if data IS NULL
 							*bErrors = true; //Set to true
 							createBInfo(); //Call bug info creation function
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt"); //Send data to debug to be written to log file
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt"); //Send data to debug to be written to log file
 						}
 
 						break;
 
 					case 2:
-						data=  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (data != NULL) {
+							gSResults.at(gSResults.size() - 1).setSVal = data;
+							*bErrors = false;
+						}
+
+						else {
+							*bErrors = true;
+							createBInfo();
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+						}
+
+						break;
+
+					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+						break;
+					}
+				}
+			}
+
+			else { //Else if no columns found			
+				*bErrors = true;
+				createBInfo();
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+			}
+		}
+
+		else { //Else if no row returned			
+			*bErrors = true;
+			createBInfo();
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+		}
+	}
+
+	else { //Else if statement could not be processed	
+		*bErrors = true;
+		createBInfo();
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+	}
+
+	finalize(statement, bErrors);
+}
+
+void Database::returnSSResults(vector<settings>& gsettings) {
+	//Iterate through the results vector and save the data to passed dataSystem vector
+	for (i = 0; i < sResults.size(); i++)
+	{
+		gsettings.push_back(settings());
+
+		gsettings.at(i).setSName = gSResults.at(i).setSName;
+		gsettings.at(i).setSVal = gSResults.at(i).setSVal;		
+	}
+
+	gSResults.clear(); //Clear the results vector for use later
+}
+
+void Database::getSResults(bool* bErrors) {
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+		result = sqlite3_step(statement);
+
+		if (result == SQLITE_ROW) {
+			cols = sqlite3_column_count(statement);
+
+			if (cols != 0)  {
+				sResults.push_back(ship());
+
+				for (i = 0; i <= cols; i++)	{
+					switch(i) {
+					case 0:
+						sResults.at(0).sID = sqlite3_column_int(statement, i);
+						break;
+
+					case 1:
+						data = (char*)sqlite3_column_text(statement,i);
+
+						if (data != NULL) {
+							sResults.at(0).sName = data;
+							*bErrors = false;
+						}
+
+						else {
+							*bErrors = true;
+							createBInfo();
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+						}
+
+						break;
+
+					case 2:
+						data = (char*)sqlite3_column_text(statement,i);
+
+						if (data != NULL) {
 							sResults.at(0).sDesc = data;
 							*bErrors = false;
 						}
 
-						else
-						{
+						else {
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 3:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement,i);
 
-						if (data != NULL)
-						{
+						if (data != NULL) {
 							sResults.at(0).sClass = data;
 							*bErrors = false;
 						}
 
-						else
-						{
+						else {
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -150,17 +226,15 @@ void Database::getSResults(bool* bErrors)
 					case 4:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (data != NULL) {
 							sResults.at(0).sSClass = data;
 							*bErrors = false;
 						}
 
-						else
-						{
+						else {
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -266,32 +340,31 @@ void Database::getSResults(bool* bErrors)
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
 			}
 
-			else //Else if no columns found
-			{
+			else {
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			}
 		}
 
-		else  //Else if no row returned
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
-	else //Else if statement could not be processed
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -376,7 +449,7 @@ void Database::getWResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -394,7 +467,7 @@ void Database::getWResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -412,7 +485,7 @@ void Database::getWResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -430,7 +503,7 @@ void Database::getWResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -550,6 +623,8 @@ void Database::getWResults(bool* bErrors)
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -559,7 +634,7 @@ void Database::getWResults(bool* bErrors)
 			{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			}
 		}
 
@@ -567,7 +642,7 @@ void Database::getWResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -575,7 +650,7 @@ void Database::getWResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -652,7 +727,7 @@ void Database::getMResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -670,7 +745,7 @@ void Database::getMResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -692,7 +767,7 @@ void Database::getMResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -710,7 +785,7 @@ void Database::getMResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -732,7 +807,7 @@ void Database::getMResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -750,7 +825,7 @@ void Database::getMResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -768,7 +843,7 @@ void Database::getMResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -787,7 +862,7 @@ void Database::getMResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -805,7 +880,7 @@ void Database::getMResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -867,7 +942,7 @@ void Database::getMResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -885,12 +960,14 @@ void Database::getMResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -900,7 +977,7 @@ void Database::getMResults(bool* bErrors)
 			{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			}
 		}
 
@@ -908,7 +985,7 @@ void Database::getMResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -916,7 +993,7 @@ void Database::getMResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -992,12 +1069,14 @@ void Database::getMesResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -1007,7 +1086,7 @@ void Database::getMesResults(bool* bErrors)
 			{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			}
 		}
 
@@ -1015,7 +1094,7 @@ void Database::getMesResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 8",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -1023,7 +1102,7 @@ void Database::getMesResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -1076,12 +1155,14 @@ void Database::getPNResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -1091,7 +1172,7 @@ void Database::getPNResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -1100,7 +1181,7 @@ void Database::getPNResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -1108,7 +1189,7 @@ void Database::getPNResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -1159,12 +1240,14 @@ void Database::getDResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -1174,7 +1257,7 @@ void Database::getDResults(bool* bErrors)
 			{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			}
 		}
 
@@ -1182,7 +1265,7 @@ void Database::getDResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -1190,7 +1273,7 @@ void Database::getDResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -1239,12 +1322,14 @@ void Database::getRResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -1254,7 +1339,7 @@ void Database::getRResults(bool* bErrors)
 			{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			}
 		}
 
@@ -1262,7 +1347,7 @@ void Database::getRResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -1270,7 +1355,7 @@ void Database::getRResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -1320,12 +1405,14 @@ void Database::getRcResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -1335,7 +1422,7 @@ void Database::getRcResults(bool* bErrors)
 			{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			}
 		}
 
@@ -1343,7 +1430,7 @@ void Database::getRcResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -1351,7 +1438,7 @@ void Database::getRcResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -1404,7 +1491,7 @@ void Database::getPSResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1422,7 +1509,7 @@ void Database::getPSResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1440,7 +1527,7 @@ void Database::getPSResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1494,6 +1581,8 @@ void Database::getPSResults(bool* bErrors)
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -1503,7 +1592,7 @@ void Database::getPSResults(bool* bErrors)
 			{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			}
 		}
 
@@ -1511,7 +1600,7 @@ void Database::getPSResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -1519,7 +1608,7 @@ void Database::getPSResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -1588,7 +1677,7 @@ void Database::getPlDefResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1606,7 +1695,7 @@ void Database::getPlDefResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1624,7 +1713,7 @@ void Database::getPlDefResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1657,7 +1746,7 @@ void Database::getPlDefResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1707,6 +1796,8 @@ void Database::getPlDefResults(bool* bErrors)
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -1716,7 +1807,7 @@ void Database::getPlDefResults(bool* bErrors)
 			{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			}
 		}
 
@@ -1724,7 +1815,7 @@ void Database::getPlDefResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -1732,7 +1823,7 @@ void Database::getPlDefResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -1805,7 +1896,7 @@ void Database::getCResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1823,7 +1914,7 @@ void Database::getCResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1841,7 +1932,7 @@ void Database::getCResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1900,12 +1991,14 @@ void Database::getCResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -1915,7 +2008,7 @@ void Database::getCResults(bool* bErrors)
 			{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			}
 		}
 
@@ -1923,7 +2016,7 @@ void Database::getCResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -1931,7 +2024,7 @@ void Database::getCResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -1996,12 +2089,14 @@ void Database::getRNResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -2011,7 +2106,7 @@ void Database::getRNResults(bool* bErrors)
 			{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			}
 		}
 
@@ -2019,7 +2114,7 @@ void Database::getRNResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -2027,7 +2122,7 @@ void Database::getRNResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -2078,7 +2173,7 @@ void Database::getRDResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -2095,7 +2190,7 @@ void Database::getRDResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -2116,12 +2211,14 @@ void Database::getRDResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -2131,7 +2228,7 @@ void Database::getRDResults(bool* bErrors)
 			{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			}
 		}
 
@@ -2139,7 +2236,7 @@ void Database::getRDResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -2147,7 +2244,7 @@ void Database::getRDResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -2200,7 +2297,7 @@ void Database::getOResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -2217,7 +2314,7 @@ void Database::getOResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -2238,7 +2335,7 @@ void Database::getOResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -2263,7 +2360,7 @@ void Database::getOResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -2280,7 +2377,7 @@ void Database::getOResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -2306,6 +2403,8 @@ void Database::getOResults(bool* bErrors)
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -2315,7 +2414,7 @@ void Database::getOResults(bool* bErrors)
 			{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			}
 		}
 
@@ -2323,7 +2422,7 @@ void Database::getOResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -2331,7 +2430,7 @@ void Database::getOResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -2395,7 +2494,7 @@ void Database::getSkResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -2412,7 +2511,7 @@ void Database::getSkResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -2429,7 +2528,7 @@ void Database::getSkResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 						break;
 
@@ -2445,7 +2544,7 @@ void Database::getSkResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -2462,7 +2561,7 @@ void Database::getSkResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 						break;
 
@@ -2486,6 +2585,8 @@ void Database::getSkResults(bool* bErrors)
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -2495,7 +2596,7 @@ void Database::getSkResults(bool* bErrors)
 			{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
 
@@ -2503,7 +2604,7 @@ void Database::getSkResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
@@ -2511,7 +2612,7 @@ void Database::getSkResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -2560,7 +2661,7 @@ void Database::getCPUResults(bool * bErrors){
 						else{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -2575,7 +2676,7 @@ void Database::getCPUResults(bool * bErrors){
 						else{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -2590,7 +2691,7 @@ void Database::getCPUResults(bool * bErrors){
 						else {
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -2644,6 +2745,8 @@ void Database::getCPUResults(bool * bErrors){
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -2652,21 +2755,21 @@ void Database::getCPUResults(bool * bErrors){
 			else{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
 
 		else{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
 	else{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -2808,11 +2911,13 @@ void Database::returnReqResults(bool* errors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -2822,7 +2927,7 @@ void Database::returnReqResults(bool* errors)
 			{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
 
@@ -2830,7 +2935,7 @@ void Database::returnReqResults(bool* errors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
@@ -2838,7 +2943,7 @@ void Database::returnReqResults(bool* errors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./SC_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -2898,7 +3003,7 @@ void Database::getPDataResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -2916,7 +3021,7 @@ void Database::getPDataResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -3018,12 +3123,14 @@ void Database::getPDataResults(bool* bErrors)
 						{
 							*bErrors = true;
 							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						break;
 					}
 				}
@@ -3033,7 +3140,7 @@ void Database::getPDataResults(bool* bErrors)
 			{
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			}
 		}
 
@@ -3041,7 +3148,7 @@ void Database::getPDataResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -3049,7 +3156,7 @@ void Database::getPDataResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -3127,7 +3234,7 @@ void Database::getPShipResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -3145,7 +3252,7 @@ void Database::getPShipResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -3263,12 +3370,14 @@ void Database::getPShipResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -3278,7 +3387,7 @@ void Database::getPShipResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -3287,7 +3396,7 @@ void Database::getPShipResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -3295,7 +3404,7 @@ void Database::getPShipResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -3398,7 +3507,7 @@ void Database::getPSSResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -3408,6 +3517,8 @@ void Database::getPSSResults(bool* bErrors)
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -3417,7 +3528,7 @@ void Database::getPSSResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -3426,7 +3537,7 @@ void Database::getPSSResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -3434,7 +3545,7 @@ void Database::getPSSResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -3500,12 +3611,14 @@ void Database::getPSHPVResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -3515,7 +3628,7 @@ void Database::getPSHPVResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -3524,7 +3637,7 @@ void Database::getPSHPVResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -3532,7 +3645,7 @@ void Database::getPSHPVResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -3596,7 +3709,7 @@ void Database::getPSCResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -3610,6 +3723,8 @@ void Database::getPSCResults(bool* bErrors)
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -3619,7 +3734,7 @@ void Database::getPSCResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -3628,7 +3743,7 @@ void Database::getPSCResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -3636,7 +3751,7 @@ void Database::getPSCResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -3696,7 +3811,7 @@ void Database::getPWMDResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -3714,7 +3829,7 @@ void Database::getPWMDResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -3724,6 +3839,8 @@ void Database::getPWMDResults(bool* bErrors)
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -3733,7 +3850,7 @@ void Database::getPWMDResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -3742,7 +3859,7 @@ void Database::getPWMDResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -3750,7 +3867,7 @@ void Database::getPWMDResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -3809,7 +3926,7 @@ void Database::getPWSDResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -3827,7 +3944,7 @@ void Database::getPWSDResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -3912,6 +4029,8 @@ void Database::getPWSDResults(bool* bErrors)
 							pWShipResults.at(pWShipResults.size()-1).sMWSpreads = sqlite3_column_int(statement,i2);
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -3921,7 +4040,7 @@ void Database::getPWSDResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -3930,7 +4049,7 @@ void Database::getPWSDResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -3938,7 +4057,7 @@ void Database::getPWSDResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -4019,7 +4138,7 @@ void Database::getPWSSResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4033,6 +4152,8 @@ void Database::getPWSSResults(bool* bErrors)
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -4042,7 +4163,7 @@ void Database::getPWSSResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -4051,7 +4172,7 @@ void Database::getPWSSResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -4059,7 +4180,7 @@ void Database::getPWSSResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -4125,7 +4246,7 @@ void Database::getPWSHPVResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4135,6 +4256,8 @@ void Database::getPWSHPVResults(bool* bErrors)
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -4144,7 +4267,7 @@ void Database::getPWSHPVResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -4153,7 +4276,7 @@ void Database::getPWSHPVResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -4161,7 +4284,7 @@ void Database::getPWSHPVResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -4222,7 +4345,7 @@ void Database::getPMDataResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4240,7 +4363,7 @@ void Database::getPMDataResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4258,7 +4381,7 @@ void Database::getPMDataResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4280,7 +4403,7 @@ void Database::getPMDataResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4298,7 +4421,7 @@ void Database::getPMDataResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4320,7 +4443,7 @@ void Database::getPMDataResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4338,7 +4461,7 @@ void Database::getPMDataResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4356,7 +4479,7 @@ void Database::getPMDataResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4374,7 +4497,7 @@ void Database::getPMDataResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4392,7 +4515,7 @@ void Database::getPMDataResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4454,7 +4577,7 @@ void Database::getPMDataResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4464,6 +4587,8 @@ void Database::getPMDataResults(bool* bErrors)
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -4473,7 +4598,7 @@ void Database::getPMDataResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -4482,7 +4607,7 @@ void Database::getPMDataResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -4490,7 +4615,7 @@ void Database::getPMDataResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -4569,7 +4694,7 @@ void Database::getPRDataResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4579,6 +4704,8 @@ void Database::getPRDataResults(bool* bErrors)
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -4588,7 +4715,7 @@ void Database::getPRDataResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -4597,7 +4724,7 @@ void Database::getPRDataResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -4605,7 +4732,7 @@ void Database::getPRDataResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -4664,7 +4791,7 @@ void Database::getSDataResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4682,7 +4809,7 @@ void Database::getSDataResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4700,7 +4827,7 @@ void Database::getSDataResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4722,6 +4849,8 @@ void Database::getSDataResults(bool* bErrors)
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -4731,7 +4860,7 @@ void Database::getSDataResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -4740,7 +4869,7 @@ void Database::getSDataResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -4748,7 +4877,7 @@ void Database::getSDataResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -4821,7 +4950,7 @@ void Database::getSPIResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4831,6 +4960,8 @@ void Database::getSPIResults(bool* bErrors)
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -4840,7 +4971,7 @@ void Database::getSPIResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -4849,7 +4980,7 @@ void Database::getSPIResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -4857,7 +4988,7 @@ void Database::getSPIResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -4919,7 +5050,7 @@ void Database::getPDResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4937,7 +5068,7 @@ void Database::getPDResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4955,7 +5086,7 @@ void Database::getPDResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -4973,7 +5104,7 @@ void Database::getPDResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -5003,6 +5134,8 @@ void Database::getPDResults(bool* bErrors)
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -5012,7 +5145,7 @@ void Database::getPDResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -5021,7 +5154,7 @@ void Database::getPDResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -5029,7 +5162,7 @@ void Database::getPDResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -5099,6 +5232,8 @@ void Database::getPDefResults(bool* bErrors)
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -5108,7 +5243,7 @@ void Database::getPDefResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -5117,7 +5252,7 @@ void Database::getPDefResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -5125,7 +5260,7 @@ void Database::getPDefResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -5176,6 +5311,8 @@ void Database::getPSDResults(bool* bErrors)
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -5185,7 +5322,7 @@ void Database::getPSDResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 
@@ -5196,7 +5333,7 @@ void Database::getPSDResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -5204,7 +5341,7 @@ void Database::getPSDResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 }
 
@@ -5265,7 +5402,7 @@ void Database::getPABResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -5279,6 +5416,8 @@ void Database::getPABResults(bool* bErrors)
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -5288,7 +5427,7 @@ void Database::getPABResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 
@@ -5299,7 +5438,7 @@ void Database::getPABResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -5307,7 +5446,7 @@ void Database::getPABResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 }
 
@@ -5374,7 +5513,7 @@ void Database::getPABRResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -5392,7 +5531,7 @@ void Database::getPABRResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -5414,7 +5553,7 @@ void Database::getPABRResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -5440,6 +5579,8 @@ void Database::getPABRResults(bool* bErrors)
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -5449,7 +5590,7 @@ void Database::getPABRResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 
@@ -5460,7 +5601,7 @@ void Database::getPABRResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -5468,7 +5609,7 @@ void Database::getPABRResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 }
 
@@ -5531,7 +5672,7 @@ void Database::getSFlagResults(bool* bErrors)
 							{
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -5541,6 +5682,8 @@ void Database::getSFlagResults(bool* bErrors)
 							break;
 
 						default:
+							createBInfo();
+							dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							break;
 						}
 					}
@@ -5550,7 +5693,7 @@ void Database::getSFlagResults(bool* bErrors)
 				{
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 				}
 			}
 		}
@@ -5559,7 +5702,7 @@ void Database::getSFlagResults(bool* bErrors)
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
@@ -5567,7 +5710,7 @@ void Database::getSFlagResults(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -5669,7 +5812,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	sqlite3_finalize(statement);
@@ -5762,7 +5905,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -5806,7 +5949,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
@@ -5864,7 +6007,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
@@ -5928,7 +6071,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
@@ -5986,7 +6129,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
@@ -6080,7 +6223,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
@@ -6139,7 +6282,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 
 
@@ -6199,7 +6342,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
@@ -6302,7 +6445,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
@@ -6358,7 +6501,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
@@ -6424,7 +6567,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
@@ -6484,7 +6627,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);\
@@ -6568,7 +6711,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
@@ -6624,7 +6767,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
@@ -6679,7 +6822,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		{
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
@@ -6743,7 +6886,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -6813,7 +6956,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -6856,7 +6999,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -6866,7 +7009,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	else
@@ -6913,7 +7056,7 @@ void Database::dData(string table, bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	finalize(statement2, bErrors);
@@ -6940,7 +7083,7 @@ int Database::getCount(string table, bool* bErrors)
 		else
 		{
 			createBInfo();
-			dbug.createBReport("SQL Code 5","No row(s) returned, check for problems",bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+			dbug.createBReport("SQL Code 5","No row(s) returned, check for problems",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			finalize(statement2, bErrors);
 			return 0;
 		}
@@ -6950,7 +7093,7 @@ int Database::getCount(string table, bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		finalize(statement2, bErrors);
 		return 0;
 	}
@@ -6964,7 +7107,7 @@ void Database::finalize(sqlite3_stmt* stmt, bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	else
@@ -6979,7 +7122,7 @@ void Database::closeDB(bool* bErrors)
 	{
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./SC_Log.txt");
+		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 	}
 
 	else

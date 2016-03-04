@@ -1135,13 +1135,13 @@ void dataSystem::rData(string table, string operation, int ID)
 		db_ds.tableTAccess("Engines");
 		db_ds.createStatement(ID, operation);
 
-		if (sEngine.size() > 0)
+		if (sEng.size() > 0)
 		{
-			sEngine.clear();
+			sEng.clear();
 		}
 
 		db_ds.getENGResults(&bErrors);
-		db_ds.returnENGResults(sEngine);
+		db_ds.returnENGResults(sEng);
 	}
 
 	else if (table == "PowerSys")

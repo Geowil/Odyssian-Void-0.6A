@@ -10,7 +10,9 @@ Created On:  Sunday, January 31, 2016 (file header added on this date)
 
 Version:
 1.0 - 01/31/2016
+1.1 - 02/19/2016
 1.2 - 02/20/2016
+1.3 - 03/04/2016
 
 
 Changes:
@@ -24,6 +26,9 @@ Changes:
 1.2:
 -Broke out the ship equipment struct into individual equipment types to eliminate unused variables per-type.
 
+1.3:
+-renamed sequipment struct to misc.  Will be removing this soon as in the near future all items will have their own table
+-Removed many of the settings struct variables due to the change in how they are being processed.  Just need the string value, will cast in the namespace.
 
 End File Header*/
 
@@ -39,17 +44,8 @@ using std::vector;
 struct settings
 {
 	//game settings imported here
-	string sDTypes; //Difficulty Types
-	vector<string> sDSettings; //Vector that will contain a list of - delimited key/value pairs for the difficulty chosen by the player.
-	string sSSIDs; //- delimited range of starter ship IDs
-	string sSCNames; //, delimited list of ship classes
-	string sWCNames; //, delimited list of weapon classes
-	float setFVal; //Setting Float Value
-	int setIVal; //Setting Int Value
-	long long setI64Val; //Setting Int64 Value
-	string setS; //Setting String Value
-	long long sSNames; //Stores the number of system names in the database
-
+	string setSName; //Setting Name
+	string setSVal; //Setting Value
 };
 
 struct ship
@@ -327,7 +323,7 @@ struct ore
 	long long oXCost;
 };
 
-struct equipment {
+struct misc {
 	string eName; //Name
 	string eDesc; //Description
 	string eType; //Type

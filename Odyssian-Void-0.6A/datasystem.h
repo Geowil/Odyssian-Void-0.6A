@@ -49,6 +49,7 @@ Version:
 1.35 - 10/09/2015
 1.36 - 02/19/2016
 1.37 - 02/21/2016
+1.38 - 03/04/2016
 
 Changes:
 1.0:
@@ -205,6 +206,9 @@ Changes:
 1.37:
 -Continued coding rData function for new changes in database.
 
+1.38:
+-Fixed an issue with the ship equipment engine vector name
+-Change sequipment vector type to misc, will be removing at some point as everything will have its own table in the near future
 
 End File Header*/
 
@@ -498,7 +502,7 @@ private:
 	vector<ore> ores;
 	vector<skill> skills;
 	vector<req> reqs;
-	vector<sequipment> sEquipment;
+	vector<misc> iMisc;
 	vector<settings> sSettings;
 	vector<cpu> sCpu;
 	vector<ram> sRam;
