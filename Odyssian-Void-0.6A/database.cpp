@@ -477,24 +477,6 @@ void Database::getWResults(bool* bErrors)
 
 						if (data != NULL)
 						{
-							wResults.at(0).wType = data;
-							*bErrors = false;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
-						}
-
-						break;
-
-					case 4:
-						data =  (char*)sqlite3_column_text(statement,i);
-
-						if (data != NULL)
-						{
 							wResults.at(0).wClass = data;
 							*bErrors = false;
 						}
@@ -508,9 +490,27 @@ void Database::getWResults(bool* bErrors)
 
 						break;
 
-					case 5:
-						wResults.at(0).wTLevel = sqlite3_column_int(statement,i);
+					case 4:
+						data = (char*)sqlite3_column_text(statement, i);
+
+						if (data != NULL)
+						{
+							wResults.at(0).wSClass = data;
+							*bErrors = false;
+						}
+
+						else
+						{
+							*bErrors = true;
+							createBInfo();
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+						}
+
 						break;
+
+					case 5:
+						wResults.at(0).wTLevel = sqlite3_column_int(statement, i);
+						break;						
 
 					case 6:
 						wResults.at(0).wPReq = (float)sqlite3_column_double(statement, i);
@@ -564,7 +564,7 @@ void Database::getWResults(bool* bErrors)
 						wResults.at(0).wMxTDistance = sqlite3_column_int(statement,i);
 						break;
 
-					//case 19:
+					//case 19: attk speed
 
 					case 20:
 						wResults.at(0).wPCon = (float)sqlite3_column_double(statement, i);
@@ -575,19 +575,19 @@ void Database::getWResults(bool* bErrors)
 						break;
 
 					case 22:
-						wResults.at(0).wMass = (float)sqlite3_column_double(statement, i);
+						wResults.at(0).wMCDur = sqlite3_column_int(statement, i);
 						break;
 
 					case 23:
-						wResults.at(0).wSG2 = (float)sqlite3_column_double(statement,i);
+						wResults.at(0).wMCYld = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 24:
-						wResults.at(0).wMCDur = sqlite3_column_int(statement,i);
+						wResults.at(0).wMass = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 25:
-						wResults.at(0).wMCYld = (float)sqlite3_column_double(statement,i);
+						wResults.at(0).wSG2 = (float)sqlite3_column_double(statement,i);
 						break;
 
 					case 26:
@@ -618,7 +618,7 @@ void Database::getWResults(bool* bErrors)
 						wResults.at(0).wPCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 43:
+					case 33:
 						wResults.at(0).wNWCost = sqlite3_column_int(statement,i);
 						break;
 
@@ -665,19 +665,28 @@ void Database::returnWResult(vector<weapon>& weapons)
 		weapons.at(i).wID = wResults.at(i).wID;
 		weapons.at(i).wName = wResults.at(i).wName;
 		weapons.at(i).wDesc = wResults.at(i).wDesc;
-		weapons.at(i).wType = wResults.at(i).wType;
 		weapons.at(i).wClass = wResults.at(i).wClass;
-		weapons.at(i).wTLevel = wResults.at(i).wTLevel;
+		weapons.at(i).wSClass = wResults.at(i).wSClass;
+		weapons.at(i).wTLevel = wResults.at(i).wTLevel;		
+		weapons.at(i).wPReq = wResults.at(i).wPReq;
+		weapons.at(i).wCReq = wResults.at(i).wCReq;
+		weapons.at(i).wRReq = wResults.at(i).wRReq;
+		weapons.at(i).wACap = wResults.at(i).wACap;
+		weapons.at(i).wACon = wResults.at(i).wACon;		
 		weapons.at(i).wMDmg = wResults.at(i).wMDmg;
 		weapons.at(i).wMxDmg = wResults.at(i).wMxDmg;
-		weapons.at(i).wMass = wResults.at(i).wMass;
+		weapons.at(i).wDILow = wResults.at(i).wDILow;
+		weapons.at(i).wDIHigh = wResults.at(i).wDIHigh;
 		weapons.at(i).wMTDistance = wResults.at(i).wMTDistance;
 		weapons.at(i).wMOTDistance = wResults.at(i).wMOTDistance;
 		weapons.at(i).wMxOTDistance = wResults.at(i).wMxOTDistance;
 		weapons.at(i).wMxTDistance = wResults.at(i).wMxTDistance;		
-		weapons.at(i).wSG2 = wResults.at(i).wSG2;
+		weapons.at(i).wPCon = wResults.at(i).wPCon;
+		weapons.at(i).wIPCon = wResults.at(i).wIPCon;
 		weapons.at(i).wMCDur = wResults.at(i).wMCDur;
 		weapons.at(i).wMCYld = wResults.at(i).wMCYld;
+		weapons.at(i).wMass = wResults.at(i).wMass;
+		weapons.at(i).wSG2 = wResults.at(i).wSG2;		
 		weapons.at(i).wXCost = wResults.at(i).wXCost;
 		weapons.at(i).wRCost = wResults.at(i).wRCost;
 		weapons.at(i).wDiCost = wResults.at(i).wDiCost;

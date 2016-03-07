@@ -109,11 +109,12 @@
     <ClInclude Include="debug.h" />
     <ClInclude Include="defenses.h" />
     <ClInclude Include="economy.h" />
-    <ClInclude Include="effects.h" />
+    <ClInclude Include="effect.h" />
     <ClInclude Include="engine.h" />
     <ClInclude Include="entity.h" />
     <ClInclude Include="e_node.h" />
     <ClInclude Include="game.h" />
+    <ClInclude Include="key_value.h" />
     <ClInclude Include="settings.h" />
     <ClInclude Include="g_structs.h" />
     <ClInclude Include="hand.h" />
@@ -162,10 +163,11 @@
     <ClCompile Include="datasystem.cpp" />
     <ClCompile Include="debug.cpp" />
     <ClCompile Include="defenses.cpp" />
-    <ClCompile Include="effects.cpp" />
+    <ClCompile Include="effect.cpp" />
     <ClCompile Include="engine.cpp" />
     <ClCompile Include="entity.cpp" />
     <ClCompile Include="game.cpp" />
+    <ClCompile Include="key_value.cpp" />
     <ClCompile Include="settings.cpp" />
     <ClCompile Include="hardPoint.cpp" />
     <ClCompile Include="hstructure.cpp" />

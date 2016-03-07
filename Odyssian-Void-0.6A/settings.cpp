@@ -23,7 +23,7 @@ using std::vector;
 Debug d_gv;
 dataSystem ds_gs;
 
-namespace gS
+namespace gSettings
 {
 
 	void getCData() {

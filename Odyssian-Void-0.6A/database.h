@@ -14,6 +14,7 @@ Version:
 1.2 - 02/20/2016
 1.3 - 02/21/2016
 1.4 - 03/04/2016
+1.5 - 03/06/2016
 
 Changes:
 1.0:
@@ -37,6 +38,9 @@ Changes:
 -Moved comments from ship query functions to settings as these are now the first two methods
 -Changed SC_Log for debug output to OV_Log throughout the cpp file
 -Added new debugging output to all default cases to notify about potential erroneous case values
+
+1.5:
+-Changed the weapon database query/return functions to follow the current database structure.
 
 End File Header*/
 

@@ -13,6 +13,7 @@ Created On:  Friday, 02/19/2016
 Version:
 1.0 - 02/19/2016
 1.1 - 02/20/2016
+1.2 - 03/06/2016
 
 
 Changes:
@@ -24,6 +25,9 @@ Changes:
 1.1:
 -Removed many class variables that are no longer neeed because we are not storing item ID ranges any more.
 -Continued recoding getCData.
+
+1.2:
+-Renamed the namespace from gS to gSettings (gameSettings) so that the shoter version can be used in classes plus it just makes more sense
 
 
 End File Header*/
@@ -39,7 +43,7 @@ End File Header*/
 using std::string;
 using std::vector;
 
-namespace gS
+namespace gSettings
 {
 	void getCData(); //Get the config data from the database
 	void printData(); //Print out loaded data

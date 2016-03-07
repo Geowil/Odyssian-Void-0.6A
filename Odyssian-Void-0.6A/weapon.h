@@ -1,3 +1,27 @@
+/*FILE HEADER
+
+File Name:
+	Weapon
+
+File Description:
+	This class will beused for abstracting and instancing of weapons within the game.  Each weapon will have a subclass of Weapon which will store its unique data so that we are not using
+	data for weapons types that are not required (eg: Bomb 'Mass' data for Laser weapons).
+
+Created On:  Sunday, March 06, 2016 (file header was added on this date)
+
+Version:
+1.0 - 03/06/2016
+
+
+Changes:
+1.0:
+-Modified a function name to more accuractly reflect what it is used for
+-Added a function to return the subclass of the weapon
+-Moved some functions around as a start to ordering based on the order of the data in the data_placeholder struct master list
+
+
+End File Header*/
+
 #ifndef WEAPON_H
 #define WEAPON_H
 
@@ -17,6 +41,11 @@ using std::string;
 class Weapon
 {
 public:
+	
+	string getWName(); //get weapon name
+	string getWDType(); //get weapon damage type
+	string getWClass(); //get weapon class
+	string getWSClass(); //get weapon subclass
 
 	int getWDRLow(); //get weapon damage range low
 	int getWDRHigh(); //get weapon damage range high
@@ -27,13 +56,11 @@ public:
 	int getWAOLow(); //get weapon accuracy range optimum low
 	int getWAOHigh(); //get weapon accuracy range optimum high
 	int getWTLevel(); //get weapon tech level
-	int getWType(); //get weapon damage type
+	int getWEffects(); //get weapon effect type
 	//int getWASpeed(); //get weapon attack speed
 	int getWID(); //Get weapon id
 
-	string getWName(); //get weapon name
-	string getWDType(); //get weapon damage type
-	string getWClass(); //get weapon class
+	
 
 	void toggleWeapon(int time); //Disable weapon
 	bool isWDisabled(); //Is this weapon disabled?
@@ -43,7 +70,7 @@ public:
 	void wSetup(int wCode); //Get weapon data from database
 	
 	float getSG2();
-	void setSG2(float sg2);
+	void setSG2(float sg2); //Really neccessary?
 
 	string data; //string data container
 

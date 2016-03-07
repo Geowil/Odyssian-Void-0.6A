@@ -13,7 +13,7 @@ Version:
 1.1 - 02/19/2016
 1.2 - 02/20/2016
 1.3 - 03/04/2016
-
+1.4 - 03/06/2016
 
 Changes:
 1.0:
@@ -29,6 +29,9 @@ Changes:
 1.3:
 -renamed sequipment struct to misc.  Will be removing this soon as in the near future all items will have their own table
 -Removed many of the settings struct variables due to the change in how they are being processed.  Just need the string value, will cast in the namespace.
+
+1.4:
+-Removed and added a few fields for weapon struct to align with current database weapons table structure.
 
 End File Header*/
 
@@ -89,8 +92,8 @@ struct weapon
 	int wID;
 	string wName;
 	string wDesc;
-	string wType;
 	string wClass;
+	string wSClass; //Subclass
 	float wPReq;
 	float wCReq;
 	float wRReq;
