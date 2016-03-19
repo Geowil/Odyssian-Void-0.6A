@@ -16,6 +16,7 @@ Version:
 1.4 - 03/04/2016
 1.5 - 03/06/2016
 1.6 - 03/18/2016
+1.7 - 03/19/2016
 
 Changes:
 1.0:
@@ -45,6 +46,10 @@ Changes:
 
 1.6:
 -Changed the planetary shield query/return functions to follow recent database changes.
+
+1.7:
+-Changed planetary defense platform query/return functions for recent database changes.
+-Refactored the code structure to remove unsused space.
 
 End File Header*/
 

@@ -1506,10 +1506,8 @@ void Database::getPSResults(bool* bErrors) {
 	finalize(statement, bErrors);
 }
 
-void Database::returnPSResults(vector<pshield>& pShield)
-{
-	for (i = 0; i < psResults.size(); i++)
-	{
+void Database::returnPSResults(vector<pshield>& pShield) {
+	for (i = 0; i < psResults.size(); i++) {
 		pShield.push_back(pshield());
 
 		pShield.at(i).psID = psResults.at(i).psID;
@@ -1538,24 +1536,18 @@ void Database::returnPSResults(vector<pshield>& pShield)
 }
 
 
-void Database::getPlDefResults(bool* bErrors)
-{
-	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-	{
+void Database::getPlDefResults(bool* bErrors) {
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 		result = sqlite3_step(statement);
 
-		if (result == SQLITE_ROW)
-		{
+		if (result == SQLITE_ROW) {
 			cols = sqlite3_column_count(statement);
 
-			if (cols != 0)
-			{
+			if (cols != 0) {
 				pdResults.push_back(pdefense());
 
-				for (i = 0; i <= cols; i++)
-				{
-					switch(i)
-					{
+				for (i = 0; i <= cols; i++) {
+					switch(i) {
 					case 0:
 						pdResults.at(0).pdID = sqlite3_column_int(statement,i);
 						break;
@@ -1563,14 +1555,12 @@ void Database::getPlDefResults(bool* bErrors)
 					case 1:
 						data =  (char*)sqlite3_column_text(statement,i);
 
-						if (data != NULL)
-						{
+						if (data != NULL) {
 							pdResults.at(0).pdName = data;
 							*bErrors = false;
 						}
 
-						else
-						{
+						else {
 							*bErrors = true;
 							createBInfo();
 							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
@@ -1581,14 +1571,12 @@ void Database::getPlDefResults(bool* bErrors)
 					case 2:
 						data =  (char*)sqlite3_column_text(statement,i);
 
-						if (data != NULL)
-						{
+						if (data != NULL) {
 							pdResults.at(0).pdDesc = data;
 							*bErrors = false;
 						}
 
-						else
-						{
+						else {
 							*bErrors = true;
 							createBInfo();
 							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
@@ -1599,17 +1587,31 @@ void Database::getPlDefResults(bool* bErrors)
 					case 3:
 						data = (char*)sqlite3_column_text(statement,i);
 
-						if (data != NULL)
-						{
-							pdResults.at(0).pdType = data;
+						if (data != NULL) {
+							pdResults.at(0).pdClass = data;
 							*bErrors = false;
 						}
 
-						else
-						{
+						else {
 							*bErrors = true;
 							createBInfo();
 							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+						}
+
+						break;
+
+					case 4:
+						data = (char*)sqlite3_column_text(statement, i);
+
+						if (data != NULL) {
+							pdResults.at(0).pdSClass = data;
+							*bErrors = false;
+						}
+
+						else {
+							*bErrors = true;
+							createBInfo();
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -1619,75 +1621,90 @@ void Database::getPlDefResults(bool* bErrors)
 						break;
 
 					case 6:
-						pdResults.at(0).pdSPoints = (float)sqlite3_column_double(statement,i);
+						pdResults.at(0).pdCPU = sqlite3_column_int(statement,i);
+						break;
+
+					case 7:
+						pdResults.at(0).pdRAM = sqlite3_column_int(statement,i);
+						break;
+
+					case 8:
+						pdResults.at(0).pdPSys = sqlite3_column_int(statement,i);
+						break;
+
+					case 9:
+						pdResults.at(0).pdCap = sqlite3_column_int(statement, i);
+						break;
+
+					case 10:
+						pdResults.at(0).pdSMatrix = sqlite3_column_int(statement, i);
 						break;
 
 					case 11:
-						pdResults.at(0).pdMDmg = (float)sqlite3_column_double(statement,i);
+						pdResults.at(0).pdAPlating = sqlite3_column_int(statement, i);
 						break;
 
 					case 12:
-						pdResults.at(0).pdMxDmg = (float)sqlite3_column_double(statement,i);
+						pdResults.at(0).pdHStruc = sqlite3_column_int(statement, i);
 						break;
 
 					case 13:
-						data = (char*)sqlite3_column_text(statement,i);
-
-						if (data != NULL)
-						{
-							pdResults.at(0).pdType = data;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
-						}
-
+						pdResults.at(0).pdWTSys = sqlite3_column_int(statement, i);
 						break;
 
-					case 21:
-						pdResults.at(0).pdRng = sqlite3_column_int(statement,i);
+					case 14:
+						pdResults.at(0).pdTSlots = sqlite3_column_int(statement,i);
 						break;
 
-					case 29:
+					case 15:
+						pdResults.at(0).pdLSlots = sqlite3_column_int(statement, i);
+						break;
+
+					case 16:
+						pdResults.at(0).pdMSlots = sqlite3_column_int(statement, i);
+						break;
+
+					case 17:
+						pdResults.at(0).pdHSlots = sqlite3_column_int(statement, i);
+						break;
+
+					case 18:
 						pdResults.at(0).pdSG2 = (float)sqlite3_column_double(statement,i);
 						break;
 
-					case 33:
+					case 19:
 						pdResults.at(0).pdXCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 34:
+					case 20:
 						pdResults.at(0).pdRCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 35:
+					case 21:
 						pdResults.at(0).pdDiCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 36:
+					case 22:
 						pdResults.at(0).pdDCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 37:
+					case 23:
 						pdResults.at(0).pdLCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 38:
+					case 24:
 						pdResults.at(0).pdUCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 39:
+					case 25:
 						pdResults.at(0).pdPluCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 40:
+					case 26:
 						pdResults.at(0).pdNWCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 42:
+					case 27:
 						pdResults.at(0).pdCXP = sqlite3_column_int(statement,i);
 						break;
 
@@ -1699,24 +1716,21 @@ void Database::getPlDefResults(bool* bErrors)
 				}
 			}
 
-			else
-			{
+			else {
 				*bErrors = true;
 				createBInfo();
 				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
 			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
 		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
@@ -1725,22 +1739,28 @@ void Database::getPlDefResults(bool* bErrors)
 	finalize(statement, bErrors);
 }
 
-void Database::returnPlDefResults(vector<pdefense>& pDefense)
-{
-	for (i = 0; i < pdResults.size(); i++)
-	{
+void Database::returnPlDefResults(vector<pdefense>& pDefense) {
+	for (i = 0; i < pdResults.size(); i++) {
 		pDefense.push_back(pdefense());
 
 		pDefense.at(i).pdID = pdResults.at(i).pdID;
 		pDefense.at(i).pdName = pdResults.at(i).pdName;
 		pDefense.at(i).pdDesc = pdResults.at(i).pdDesc;
-		pDefense.at(i).pdType = pdResults.at(i).pdType;
+		pDefense.at(i).pdClass = pdResults.at(i).pdClass;
+		pDefense.at(i).pdSClass = pdResults.at(i).pdSClass;
 		pDefense.at(i).pdTLevel = pdResults.at(i).pdTLevel;
-		pDefense.at(i).pdSPoints = pdResults.at(i).pdSPoints;
-		pDefense.at(i).pdMDmg = pdResults.at(i).pdMDmg;
-		pDefense.at(i).pdMxDmg = pdResults.at(i).pdMxDmg;
-		pDefense.at(i).pdDType = pdResults.at(i).pdDType;
-		pDefense.at(i).pdRng = pdResults.at(i).pdRng;
+		pDefense.at(i).pdCPU = pdResults.at(i).pdCPU;
+		pDefense.at(i).pdRAM = pdResults.at(i).pdRAM;
+		pDefense.at(i).pdPSys = pdResults.at(i).pdPSys;
+		pDefense.at(i).pdCap = pdResults.at(i).pdCap;
+		pDefense.at(i).pdSMatrix = pdResults.at(i).pdSMatrix;
+		pDefense.at(i).pdAPlating = pdResults.at(i).pdAPlating;
+		pDefense.at(i).pdHStruc = pdResults.at(i).pdHStruc;
+		pDefense.at(i).pdWTSys = pdResults.at(i).pdWTSys;
+		pDefense.at(i).pdTSlots = pdResults.at(i).pdTSlots;
+		pDefense.at(i).pdLSlots = pdResults.at(i).pdLSlots;
+		pDefense.at(i).pdMSlots = pdResults.at(i).pdMSlots;
+		pDefense.at(i).pdHSlots = pdResults.at(i).pdHSlots;
 		pDefense.at(i).pdSG2 = pdResults.at(i).pdSG2;
 		pDefense.at(i).pdXCost = pdResults.at(i).pdXCost;
 		pDefense.at(i).pdRCost = pdResults.at(i).pdRCost;

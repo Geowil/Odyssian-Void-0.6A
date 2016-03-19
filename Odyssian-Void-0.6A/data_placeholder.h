@@ -15,6 +15,7 @@ Version:
 1.3 - 03/04/2016
 1.4 - 03/06/2016
 1.5 - 03/18/2016
+1.6 - 03/19/2016
 
 Changes:
 1.0:
@@ -36,6 +37,9 @@ Changes:
 
 1.5:
 -Added and removed some fields from PShields to account for recent database changes.
+
+1.6:
+-Added a new variable to planetary defense platforms and removed an unneeded field.
 
 
 End File Header*/
@@ -159,7 +163,8 @@ struct pdefense
 	int pdID;
 	string pdName;
 	string pdDesc;
-	string pdType;
+	string pdClass;
+	string pdSClass;
 	int pdTLevel;
 	int pdCPU;
 	int pdRAM;
@@ -170,7 +175,7 @@ struct pdefense
 	int pdHStruc;
 	int pdWTSys;
 	int pdTSlots;
-	int pdLSLots;
+	int pdLSlots;
 	int pdMSlots;
 	int pdHSlots;
 	float pdCargo;

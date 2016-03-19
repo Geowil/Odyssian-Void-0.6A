@@ -11,6 +11,7 @@ Created On:  Sunday, March 06, 2016 (file header was added on this date)
 
 Version:
 1.0 - 03/06/2016
+1.1 - 03/19/2016
 
 
 Changes:
@@ -19,6 +20,8 @@ Changes:
 -Added a function to return the subclass of the weapon
 -Moved some functions around as a start to ordering based on the order of the data in the data_placeholder struct master list
 
+1.1:
+-Added wSClass variable
 
 End File Header*/
 
@@ -81,6 +84,7 @@ protected:
 	string	wName; //name
 	int	wTLevel; //technology level
 	string wClass; //weapon class
+	string wSClass; //weapon sub class
 	int	wType; //weapon type
 	//int wASpeed; //weapon attack speed
 	bool wStatus; //weapon activity status
