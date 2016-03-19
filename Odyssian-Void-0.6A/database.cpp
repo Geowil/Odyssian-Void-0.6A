@@ -1416,46 +1416,62 @@ void Database::getPSResults(bool* bErrors) {
 						break;
 
 					case 6:
-						psResults.at(0).psSPoints = (float)sqlite3_column_double(statement,i);
+						psResults.at(0).psPSystem = sqlite3_column_int(statement,i);
 						break;
 
 					case 7:
-						psResults.at(0).psSPRegen = (float)sqlite3_column_double(statement,i);
+						psResults.at(0).psCPU = sqlite3_column_int(statement,i);
 						break;
 
-					case 29:
-						psResults.at(0).psSG2 = (float)sqlite3_column_double(statement,i);
+					case 8:
+						psResults.at(0).psRAM = sqlite3_column_int(statement, i);
 						break;
 
-					case 33:
+					case 9:
+						psResults.at(0).psTSlots = sqlite3_column_int(statement, i);
+						break;
+
+					case 10:
+						psResults.at(0).psLSlots = sqlite3_column_int(statement, i);
+						break;
+
+					case 11:
+						psResults.at(0).psMSlots = sqlite3_column_int(statement, i);
+						break;
+
+					case 12:
+						psResults.at(0).psSG2 = sqlite3_column_int(statement,i);
+						break;
+
+					case 13:
 						psResults.at(0).psXCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 34:
+					case 14:
 						psResults.at(0).psRCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 35:
+					case 15:
 						psResults.at(0).psDiCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 36:
+					case 16:
 						psResults.at(0).psDCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 37:
+					case 17:
 						psResults.at(0).psLCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 38:
+					case 18:
 						psResults.at(0).psUCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 39:
+					case 19:
 						psResults.at(0).psPluCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 40:
+					case 20:
 						psResults.at(0).psNWCost = sqlite3_column_int(statement,i);
 						break;
 
@@ -1501,8 +1517,12 @@ void Database::returnPSResults(vector<pshield>& pShield)
 		pShield.at(i).psDesc = psResults.at(i).psDesc;
 		pShield.at(i).psType = psResults.at(i).psType;
 		pShield.at(i).psTLevel = psResults.at(i).psTLevel;
-		pShield.at(i).psSPoints = psResults.at(i).psSPoints;
-		pShield.at(i).psSPRegen = psResults.at(i).psSPRegen;
+		pShield.at(i).psPSystem = psResults.at(i).psPSystem;
+		pShield.at(i).psCPU = psResults.at(i).psCPU;
+		pShield.at(i).psRAM = psResults.at(i).psRAM;
+		pShield.at(i).psTSlots = psResults.at(i).psTSlots;
+		pShield.at(i).psLSlots = psResults.at(i).psLSlots;
+		pShield.at(i).psMSlots = psResults.at(i).psMSlots;
 		pShield.at(i).psSG2 = psResults.at(i).psSG2;
 		pShield.at(i).psXCost = psResults.at(i).psXCost;
 		pShield.at(i).psRCost = psResults.at(i).psRCost;

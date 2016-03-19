@@ -15,6 +15,7 @@ Version:
 1.3 - 02/21/2016
 1.4 - 03/04/2016
 1.5 - 03/06/2016
+1.6 - 03/18/2016
 
 Changes:
 1.0:
@@ -41,6 +42,9 @@ Changes:
 
 1.5:
 -Changed the weapon database query/return functions to follow the current database structure.
+
+1.6:
+-Changed the planetary shield query/return functions to follow recent database changes.
 
 End File Header*/
 

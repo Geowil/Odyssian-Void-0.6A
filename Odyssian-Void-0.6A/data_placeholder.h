@@ -14,6 +14,7 @@ Version:
 1.2 - 02/20/2016
 1.3 - 03/04/2016
 1.4 - 03/06/2016
+1.5 - 03/18/2016
 
 Changes:
 1.0:
@@ -32,6 +33,10 @@ Changes:
 
 1.4:
 -Removed and added a few fields for weapon struct to align with current database weapons table structure.
+
+1.5:
+-Added and removed some fields from PShields to account for recent database changes.
+
 
 End File Header*/
 
@@ -132,9 +137,12 @@ struct pshield
 	string psDesc;
 	string psType;
 	int psTLevel;
-	float psCapacity;
-	float psSPRRate; //Rate of shield recharge
-	float psSPRAmount; //How much shields  recharge by
+	int psPSystem; //ID for power system
+	int psCPU; //ID for installed CPU
+	int psRAM; //ID for installed ram
+	int psTSlots; //Total number of slots
+	int psLSlots; //Number of low slots for special equipment
+	int psMSlots; //Number of med slots for special equipment
 	float psSG2;
 	long long psXCost;
 	long long psRCost;
