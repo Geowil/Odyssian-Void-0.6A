@@ -73,7 +73,7 @@ public:
 	void wSetup(int wCode); //Get weapon data from database
 	
 	float getSG2();
-	void setSG2(float sg2); //Really neccessary?
+	void setSG2(float sg2); //Really neccessary? yes, some skills may reduce the sg2 of items
 
 	string data; //string data container
 
@@ -85,7 +85,6 @@ protected:
 	int	wTLevel; //technology level
 	string wClass; //weapon class
 	string wSClass; //weapon sub class
-	int	wType; //weapon type
 	//int wASpeed; //weapon attack speed
 	bool wStatus; //weapon activity status
 	int wDTimer; //weapon disable timer

@@ -52,11 +52,6 @@ int Weapon::getWTLevel()
 	return wTLevel;
 }
 
-int Weapon::getWType()
-{
-	return wType;
-}
-
 string Weapon::getWClass()
 {
 	return wClass;

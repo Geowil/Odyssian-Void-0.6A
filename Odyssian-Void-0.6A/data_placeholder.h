@@ -207,8 +207,6 @@ struct clone
 	long long		cUCost;
 	long long		cPluCost;
 	long long		cNWCost;
-	string  cEffect;
-	float cEAmount;
 };
 
 
