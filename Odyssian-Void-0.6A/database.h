@@ -17,6 +17,7 @@ Version:
 1.5 - 03/06/2016
 1.6 - 03/18/2016
 1.7 - 03/19/2016
+1.8 - 03/30/2016
 
 Changes:
 1.0:
@@ -50,6 +51,11 @@ Changes:
 1.7:
 -Changed planetary defense platform query/return functions for recent database changes.
 -Refactored the code structure to remove unsused space.
+
+1.8:
+-Split 'name' functions into three: prefix, root, and suffix to align to database changes
+-Exchanged cType for cClass for clones
+-Renumbered the cases for clone query
 
 End File Header*/
 
@@ -132,8 +138,12 @@ public:
 	void returnCResults(vector<clone>& iClone);
 
 	//Names
-	void getRNResults(bool* bErrors);
-	void returnRNResults(vector<name>& names);
+	void getRNPResults(bool* bErrors);
+	void returnRNPResults(vector<name_pre>& names);
+	void getRNRResults(bool* bErrors);
+	void returnRNRResults(vector<name_root>& names);
+	void getRNSResults(bool* bErrors);
+	void returnRNSResults(vector<name_suf>& names);
 
 	//Resource Data
 	void getRDResults(bool* bErrors);
@@ -308,7 +318,9 @@ private:
 	vector<pshield> psResults; //Planetary Shields
 	vector<pdefense> pdResults; //Plantary Defenses
 	vector<clone> cResults; //Clones
-	vector<name> nResults; //Names
+	vector<name_pre> nPResults; //Name Preffix
+	vector<name_root> nRResults; //Name Root
+	vector<name_suf> nSResults; //Name Suffix
 	vector<resource> resResults; //Resource
 	vector<ore> oResults; //Ore
 	vector<skill> skResults; //Skill

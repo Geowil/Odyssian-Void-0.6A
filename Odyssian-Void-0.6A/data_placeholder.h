@@ -16,6 +16,7 @@ Version:
 1.4 - 03/06/2016
 1.5 - 03/18/2016
 1.6 - 03/19/2016
+1.7 - 03/30/2016
 
 Changes:
 1.0:
@@ -40,6 +41,13 @@ Changes:
 
 1.6:
 -Added a new variable to planetary defense platforms and removed an unneeded field.
+
+1.7:
+-Added variables to empires struct
+-Exchanged cType for cClass for clone struct
+-Split name struct into three different objects: name_pre, name_root, and name_suf
+-Added variables to corporations struct
+
 
 
 End File Header*/
@@ -196,7 +204,7 @@ struct clone
 	int		cID;
 	string  cName;
 	string  cDesc;
-	string  cType;
+	string  cClass;
 	int		cTLevel;
 	float   cSG2;
 	long long		cXCost;
@@ -283,12 +291,16 @@ struct pMData //For Planetary militia in later versions
 
 struct empires
 {
-
+	int eID;
+	string eName;
+	int eRace;
+	string eDesc;
 };
 
 struct corporations
 {
-
+	int cID;
+	string 
 };
 
 struct diplomacy
@@ -306,9 +318,17 @@ struct ranks
 	string rkName;
 };
 
-struct name
+struct name_pre
 {
-	string name_;
+	string nPrefix;
+};
+
+struct name_root {
+	string nRoot;
+};
+
+struct name_suf {
+	string nSuffix;
 };
 
 struct resource

@@ -1840,7 +1840,7 @@ void Database::getCResults(bool* bErrors)
 
 						if (data != NULL)
 						{
-							cResults.at(0).cType = data;
+							cResults.at(0).cClass = data;
 							*bErrors = false;
 						}
 
@@ -1853,63 +1853,44 @@ void Database::getCResults(bool* bErrors)
 
 						break;
 
-					case 5:
+					case 4:
 						cResults.at(0).cTLevel = sqlite3_column_int(statement,i);
 						break;
 
-					case 29:
+					case 5:
 						cResults.at(0).cSG2 = (float)sqlite3_column_double(statement,i);
 						break;
 
-					case 33:
+					case 6:
 						cResults.at(0).cXCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 34:
+					case 7:
 						cResults.at(0).cRCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 35:
+					case 8:
 						cResults.at(0).cDiCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 36:
+					case 9:
 						cResults.at(0).cDCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 37:
+					case 10:
 						cResults.at(0).cLCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 38:
+					case 11:
 						cResults.at(0).cUCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 39:
+					case 12:
 						cResults.at(0).cPluCost = sqlite3_column_int(statement,i);
 						break;
 
-					case 40:
+					case 13:
 						cResults.at(0).cNWCost = sqlite3_column_int(statement,i);
-						break;
-
-					case 41:
-						
-						data = (char*)sqlite3_column_text(statement,i);
-
-						if (data != NULL)
-						{
-
-							cResults.at(0).cEffect = data;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
-						}
-
 						break;
 
 					default:
@@ -1955,7 +1936,7 @@ void Database::returnCResults(vector<clone>& iClone)
 		iClone.at(i).cID = cResults.at(i).cID;
 		iClone.at(i).cName = cResults.at(i).cName;
 		iClone.at(i).cDesc = cResults.at(i).cDesc;
-		iClone.at(i).cType = cResults.at(i).cType;
+		iClone.at(i).cClass = cResults.at(i).cClass;
 		iClone.at(i).cTLevel = cResults.at(i).cTLevel;
 		iClone.at(i).cSG2 = cResults.at(i).cSG2;
 		iClone.at(i).cXCost = cResults.at(i).cXCost;
@@ -1966,14 +1947,13 @@ void Database::returnCResults(vector<clone>& iClone)
 		iClone.at(i).cUCost = cResults.at(i).cUCost;
 		iClone.at(i).cPluCost = cResults.at(i).cPluCost;
 		iClone.at(i).cNWCost = cResults.at(i).cNWCost;
-		iClone.at(i).cEffect = cResults.at(i).cEffect;
 	}
 
 	cResults.clear();
 }
 
 //Name
-void Database::getRNResults(bool* bErrors)
+void Database::getRNPResults(bool* bErrors)
 {
 	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
 	{
@@ -1985,19 +1965,18 @@ void Database::getRNResults(bool* bErrors)
 
 			if (cols != 0)
 			{
-				nResults.push_back(name());
+				nPResults.push_back(name_pre());
 
 				for (i = 0; i <= cols; i++)
 				{
 					switch(i)
 					{
-
 					case 1:
 						data =  (char*)sqlite3_column_text(statement,i);
 
 						if (data != NULL)
 						{
-							nResults.at(0).name_ = data;
+							nPResults.at(i).nPrefix = data;
 							*bErrors = false;
 						}
 
@@ -2044,16 +2023,154 @@ void Database::getRNResults(bool* bErrors)
 	finalize(statement, bErrors);
 }
 
-void Database::returnRNResults(vector<name>& names)
+void Database::returnRNPResults(vector<name_pre>& names)
 {
-	for (i = 0; i < nResults.size(); i++)
+	for (i = 0; i < nPResults.size(); i++)
 	{
-		names.push_back(name());
+		names.push_back(name_pre());
 
-		names.at(0).name_ = nResults.at(0).name_;
+		names.at(0).nPrefix = nPResults.at(0).nPrefix;
 	}
 
-	nResults.clear();
+	nPResults.clear();
+}
+
+void Database::getRNRResults(bool* bErrors) {
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+		result = sqlite3_step(statement);
+
+		if (result == SQLITE_ROW) {
+			cols = sqlite3_column_count(statement);
+
+			if (cols != 0) {
+				nRResults.push_back(name_root());
+
+				for (i = 0; i <= cols; i++) {
+					switch (i) {
+					case 1:
+						data = (char*)sqlite3_column_text(statement, i);
+
+						if (data != NULL) {
+							nRResults.at(i).nRoot = data;
+							*bErrors = false;
+						}
+
+						else {
+							*bErrors = true;
+							createBInfo();
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+						}
+
+						break;
+
+					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+						break;
+					}
+				}
+			}
+
+			else {
+				*bErrors = true;
+				createBInfo();
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+			}
+		}
+
+		else {
+			*bErrors = true;
+			createBInfo();
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+		}
+	}
+
+	else {
+		*bErrors = true;
+		createBInfo();
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+	}
+
+	finalize(statement, bErrors);
+}
+
+void Database::returnRNRResults(vector<name_root>& names) {
+	for (i = 0; i < nRResults.size(); i++) {
+		names.push_back(name_root());
+
+		names.at(0).nRoot = nRResults.at(0).nRoot;
+	}
+
+	nRResults.clear();
+}
+
+void Database::getRNSResults(bool* bErrors) {
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+		result = sqlite3_step(statement);
+
+		if (result == SQLITE_ROW) {
+			cols = sqlite3_column_count(statement);
+
+			if (cols != 0) {
+				nSResults.push_back(name_suf());
+
+				for (i = 0; i <= cols; i++) {
+					switch (i) {
+					case 1:
+						data = (char*)sqlite3_column_text(statement, i);
+
+						if (data != NULL) {
+							nSResults.at(i).nSuffix = data;
+							*bErrors = false;
+						}
+
+						else {
+							*bErrors = true;
+							createBInfo();
+							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+						}
+
+						break;
+
+					default:
+						createBInfo();
+						dbug.createBReport("Warning", "Unexpected Case value " + i, bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+						break;
+					}
+				}
+			}
+
+			else {
+				*bErrors = true;
+				createBInfo();
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+			}
+		}
+
+		else {
+			*bErrors = true;
+			createBInfo();
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+		}
+	}
+
+	else {
+		*bErrors = true;
+		createBInfo();
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+	}
+
+	finalize(statement, bErrors);
+}
+
+void Database::returnRNSResults(vector<name_suf>& names) {
+	for (i = 0; i < nSResults.size(); i++) {
+		names.push_back(name_suf());
+
+		names.at(0).nSuffix = nSResults.at(0).nSuffix;
+	}
+
+	nSResults.clear();
 }
 
 //Resource
