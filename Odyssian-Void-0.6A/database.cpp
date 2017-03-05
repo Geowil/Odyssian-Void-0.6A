@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <chrono>
 #include "sqlite3.h"
+#include "utilities.cpp"
 
 using namespace std;
 
@@ -11,66 +12,47 @@ using namespace std;
 
 Debug dbug;
 
-Database::Database()
-{
+Database::Database() {}
 
+void Database::openDB(bool* bErrors) {
+	*bErrors = openDBFile("ovDB.sqlite");
 }
 
-void Database::openDB(bool* bErrors)
-{
-	if (sqlite3_open("scDatabase.sqlite",&dBase) != SQLITE_OK)
-	{
-		*bErrors = true;
+void Database::openSave(bool* bErrors) {
+	*bErrors = openDBFile("ovSave.sqlite");
+}
+
+bool Database::openDBFile(const char* dbFile) {
+	if (sqlite3_open(dbFile, &dBase) != SQLITE_OK) {
 		createBInfo();
-		dbug.createBReport("SQL Code 1",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
-	}
+		dbug.createBReport("SQL Code 1", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 
-	else
-	{
-		*bErrors = false;
+		return true;
 	}
-}
-
-void Database::openSave(bool* bErrors)
-{
-	if (sqlite3_open("scSave.sqlite",&dBase) != SQLITE_OK)
-	{
-		*bErrors = true;
-		createBInfo();
-		dbug.createBReport("SQL Code 1",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
-	}
-
-	else
-	{
-		*bErrors = false;
+	else {
+		return false;
 	}
 }
 
-void Database::tableTAccess(string table)
-{
+void Database::tableTAccess(string table) {
 	dTable = table;
 }
 
-void Database::createStatement(int iID, string operation)
-{
+void Database::createStatement(int iID, string operation) {
 	stringstream ss;
 	ss << iID;
 
 	string sID(ss.str());
 
-	if ((operation == "select from") && (iID > 0))
-	{
+	if ((operation == "select from") && (iID > 0)) {
 		sqlStr = "Select * From " + dTable + " Where ID = " + sID;
 	}
-
-	else if ((operation == "select from") && (iID == 0))
-	{
+	else if ((operation == "select from") && (iID == 0)) {
 		sqlStr = "Select * From " + dTable;
 	}
 }
 
 //All comments on function below apply to all other functions in this class; the comments will only be displayed here
-
 void Database::getSSResults(bool* bErrors) {
 	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) { //Check if the statement can be created
 		result - sqlite3_step(statement); //Call sqlite3_step to execute the query
@@ -86,15 +68,8 @@ void Database::getSSResults(bool* bErrors) {
 					case 1:
 						data = (char*)sqlite3_column_text(statement, i); //Store returned data temporarily for null checking for string returns
 
-						if (data != NULL) { //If data is not NULL continue
+						if (checkValidity(data, bErrors)) { //If data is not NULL continue
 							gSResults.at(gSResults.size() - 1).setSName = data; //Save data into the vector element
-							*bErrors = false; //Set to false since no errors occurred
-						}
-
-						else { //Else if data IS NULL
-							*bErrors = true; //Set to true
-							createBInfo(); //Call bug info creation function
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt"); //Send data to debug to be written to log file
 						}
 
 						break;
@@ -102,15 +77,8 @@ void Database::getSSResults(bool* bErrors) {
 					case 2:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							gSResults.at(gSResults.size() - 1).setSVal = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -122,21 +90,18 @@ void Database::getSSResults(bool* bErrors) {
 					}
 				}
 			}
-
 			else { //Else if no columns found			
 				*bErrors = true;
 				createBInfo();
 				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
 		else { //Else if no row returned			
 			*bErrors = true;
 			createBInfo();
 			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
 	else { //Else if statement could not be processed	
 		*bErrors = true;
 		createBInfo();
@@ -148,12 +113,11 @@ void Database::getSSResults(bool* bErrors) {
 
 void Database::returnSSResults(vector<settings>& gsettings) {
 	//Iterate through the results vector and save the data to passed dataSystem vector
-	for (i = 0; i < sResults.size(); i++)
-	{
+	for (i = 0; i < sResults.size(); i++) {
 		gsettings.push_back(settings());
 
 		gsettings.at(i).setSName = gSResults.at(i).setSName;
-		gsettings.at(i).setSVal = gSResults.at(i).setSVal;		
+		gsettings.at(i).setSVal = gSResults.at(i).setSVal;
 	}
 
 	gSResults.clear(); //Clear the results vector for use later
@@ -164,61 +128,41 @@ void Database::getSResults(bool* bErrors) {
 		result = sqlite3_step(statement);
 
 		if (result == SQLITE_ROW) {
+			//TODO: find out if possible to generalize down to single function to be called rom all other fetch methods
 			cols = sqlite3_column_count(statement);
 
-			if (cols != 0)  {
+			if (cols != 0) {
 				sResults.push_back(ship());
 
-				for (i = 0; i <= cols; i++)	{
-					switch(i) {
+				for (i = 0; i <= cols; i++) {
+					switch (i) {
 					case 0:
 						sResults.at(0).sID = sqlite3_column_int(statement, i);
 						break;
 
 					case 1:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							sResults.at(0).sName = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 2:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							sResults.at(0).sDesc = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 3:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							sResults.at(0).sClass = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -226,116 +170,127 @@ void Database::getSResults(bool* bErrors) {
 					case 4:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
-							sResults.at(0).sSClass = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+						if (checkValidity(data, bErrors)) {
+							sResults.at(0).sType = data;
 						}
 
 						break;
 
 					case 5:
-						sResults.at(0).sTLevel = sqlite3_column_int(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
+
+						if (checkValidity(data, bErrors)) {
+							sResults.at(0).sClass = data;
+						}
+
 						break;
 
 					case 6:
-						sResults.at(0).sCPU = sqlite3_column_int(statement, i);
+						data = (char*)sqlite3_column_text(statement, i);
+
+						if (checkValidity(data, bErrors)) {
+							sResults.at(0).sSClass = data; //Ship Subclass
+						}
+
 						break;
 
 					case 7:
-						sResults.at(0).sRAM = sqlite3_column_int(statement, i);
+						sResults.at(0).sTLevel = sqlite3_column_int(statement, i);
 						break;
 
 					case 8:
-						sResults.at(0).sPS = sqlite3_column_int(statement, i);
+						sResults.at(0).sCPU = sqlite3_column_int(statement, i);
 						break;
 
 					case 9:
-						sResults.at(0).sSPS = sqlite3_column_int(statement,i);
+						sResults.at(0).sRAM = sqlite3_column_int(statement, i);
 						break;
 
 					case 10:
-						sResults.at(0).sEng = sqlite3_column_int(statement,i);
+						sResults.at(0).sPS = sqlite3_column_int(statement, i);
 						break;
 
 					case 11:
-						sResults.at(0).sWFG = sqlite3_column_int(statement,i);
+						sResults.at(0).sSPS = sqlite3_column_int(statement, i);
 						break;
 
 					case 12:
-						sResults.at(0).sSM = sqlite3_column_int(statement,i);
+						sResults.at(0).sEng = sqlite3_column_int(statement, i);
 						break;
 
 					case 13:
-						sResults.at(0).sAP = sqlite3_column_int(statement,i);
+						sResults.at(0).sWFG = sqlite3_column_int(statement, i);
 						break;
 
 					case 14:
-						sResults.at(0).sHS = sqlite3_column_int(statement,i);
+						sResults.at(0).sSM = sqlite3_column_int(statement, i);
 						break;
 
 					case 15:
-						sResults.at(0).sWTS = sqlite3_column_int(statement,i);
+						sResults.at(0).sAP = sqlite3_column_int(statement, i);
 						break;
 
 					case 16:
-						sResults.at(0).sTSlots = sqlite3_column_int(statement, i);
+						sResults.at(0).sHS = sqlite3_column_int(statement, i);
 						break;
 
 					case 17:
-						sResults.at(0).lSlots = sqlite3_column_int(statement, i);
+						sResults.at(0).sWTS = sqlite3_column_int(statement, i);
 						break;
 
 					case 18:
-						sResults.at(0).mSlots = sqlite3_column_int(statement, i);
+						sResults.at(0).sTSlots = sqlite3_column_int(statement, i);
 						break;
 
 					case 19:
-						sResults.at(0).hSlots = sqlite3_column_int(statement, i);
+						sResults.at(0).lSlots = sqlite3_column_int(statement, i);
 						break;
 
 					case 20:
-						sResults.at(0).sSG2 = (float)sqlite3_column_double(statement,i);
+						sResults.at(0).mSlots = sqlite3_column_int(statement, i);
 						break;
 
 					case 21:
-						sResults.at(0).sCargo = (float)sqlite3_column_double(statement,i);
-						break;					
+						sResults.at(0).hSlots = sqlite3_column_int(statement, i);
+						break;
 
 					case 22:
-						sResults.at(0).sXCost = sqlite3_column_int64(statement,i);
+						sResults.at(0).sSG2 = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 23:
-						sResults.at(0).sRCost = sqlite3_column_int64(statement, i);
+						sResults.at(0).sCargo = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 24:
-						sResults.at(0).sDiCost = sqlite3_column_int64(statement, i);
+						sResults.at(0).sXCost = sqlite3_column_int64(statement, i);
 						break;
 
 					case 25:
-						sResults.at(0).sDCost = sqlite3_column_int64(statement, i);
+						sResults.at(0).sRCost = sqlite3_column_int64(statement, i);
 						break;
 
 					case 26:
-						sResults.at(0).sLCost = sqlite3_column_int64(statement, i);
+						sResults.at(0).sDiCost = sqlite3_column_int64(statement, i);
 						break;
 
 					case 27:
-						sResults.at(0).sUCost = sqlite3_column_int64(statement, i);
+						sResults.at(0).sDCost = sqlite3_column_int64(statement, i);
 						break;
 
 					case 28:
-						sResults.at(0).sPCost = sqlite3_column_int64(statement, i);
+						sResults.at(0).sLCost = sqlite3_column_int64(statement, i);
 						break;
 
 					case 29:
+						sResults.at(0).sUCost = sqlite3_column_int64(statement, i);
+						break;
+
+					case 30:
+						sResults.at(0).sPCost = sqlite3_column_int64(statement, i);
+						break;
+
+					case 31:
 						sResults.at(0).sCEXP = sqlite3_column_int(statement, i);
 						break;
 
@@ -346,35 +301,30 @@ void Database::getSResults(bool* bErrors) {
 					}
 				}
 			}
-
 			else {
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
 		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
 	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnSResult(vector<ship>& ships)
-{
+void Database::returnSResult(vector<ship>& ships) {
 	//Iterate through the results vector and save the data to passed dataSystem vector
-	for (i = 0; i < sResults.size(); i++)
-	{
+	for (i = 0; i < sResults.size(); i++) {
 		ships.push_back(ship());
 
 		ships.at(i).sID = sResults.at(i).sID;
@@ -424,56 +374,35 @@ void Database::getWResults(bool* bErrors) {
 			if (cols != 0) {
 				wResults.push_back(weapon());
 
-				for (i = 0; i <= cols; i++)	{
-					switch(i) {
+				for (i = 0; i <= cols; i++) {
+					switch (i) {
 					case 0:
 						wResults.at(0).wID = sqlite3_column_int(statement, i);
 						break;
 
 					case 1:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							wResults.at(0).wName = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 2:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							wResults.at(0).wDesc = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 3:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							wResults.at(0).wClass = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -481,22 +410,15 @@ void Database::getWResults(bool* bErrors) {
 					case 4:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							wResults.at(0).wSClass = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
 
 					case 5:
 						wResults.at(0).wTLevel = sqlite3_column_int(statement, i);
-						break;						
+						break;
 
 					case 6:
 						wResults.at(0).wPReq = (float)sqlite3_column_double(statement, i);
@@ -519,38 +441,38 @@ void Database::getWResults(bool* bErrors) {
 						break;
 
 					case 11:
-						wResults.at(0).wMDmg = (float)sqlite3_column_double(statement,i);
+						wResults.at(0).wMDmg = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 12:
-						wResults.at(0).wMxDmg = (float)sqlite3_column_double(statement,i);
+						wResults.at(0).wMxDmg = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 13:
-						wResults.at(0).wDILow = (float)sqlite3_column_double(statement,i);
+						wResults.at(0).wDILow = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 14:
-						wResults.at(0).wDIHigh = (float)sqlite3_column_double(statement,i);
+						wResults.at(0).wDIHigh = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 15:
-						wResults.at(0).wMTDistance = sqlite3_column_int(statement,i);
+						wResults.at(0).wMTDistance = sqlite3_column_int(statement, i);
 						break;
 
 					case 16:
-						wResults.at(0).wMOTDistance = sqlite3_column_int(statement,i);
+						wResults.at(0).wMOTDistance = sqlite3_column_int(statement, i);
 						break;
 
 					case 17:
-						wResults.at(0).wMxOTDistance = sqlite3_column_int(statement,i);
+						wResults.at(0).wMxOTDistance = sqlite3_column_int(statement, i);
 						break;
 
 					case 18:
-						wResults.at(0).wMxTDistance = sqlite3_column_int(statement,i);
+						wResults.at(0).wMxTDistance = sqlite3_column_int(statement, i);
 						break;
 
-					//case 19: attk speed
+						//case 19: attk speed
 
 					case 20:
 						wResults.at(0).wPCon = (float)sqlite3_column_double(statement, i);
@@ -573,39 +495,39 @@ void Database::getWResults(bool* bErrors) {
 						break;
 
 					case 25:
-						wResults.at(0).wSG2 = (float)sqlite3_column_double(statement,i);
+						wResults.at(0).wSG2 = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 26:
-						wResults.at(0).wXCost = sqlite3_column_int(statement,i);
+						wResults.at(0).wXCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 27:
-						wResults.at(0).wRCost = sqlite3_column_int(statement,i);
+						wResults.at(0).wRCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 28:
-						wResults.at(0).wDiCost = sqlite3_column_int(statement,i);
+						wResults.at(0).wDiCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 29:
-						wResults.at(0).wDCost = sqlite3_column_int(statement,i);
+						wResults.at(0).wDCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 30:
-						wResults.at(0).wLCost = sqlite3_column_int(statement,i);
+						wResults.at(0).wLCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 31:
-						wResults.at(0).wUCost = sqlite3_column_int(statement,i);
+						wResults.at(0).wUCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 32:
-						wResults.at(0).wPCost = sqlite3_column_int(statement,i);
+						wResults.at(0).wPCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 33:
-						wResults.at(0).wNWCost = sqlite3_column_int(statement,i);
+						wResults.at(0).wNWCost = sqlite3_column_int(statement, i);
 						break;
 
 					default:
@@ -615,25 +537,22 @@ void Database::getWResults(bool* bErrors) {
 					}
 				}
 			}
-
 			else {
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
 		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
 	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -648,12 +567,12 @@ void Database::returnWResult(vector<weapon>& weapons) {
 		weapons.at(i).wDesc = wResults.at(i).wDesc;
 		weapons.at(i).wClass = wResults.at(i).wClass;
 		weapons.at(i).wSClass = wResults.at(i).wSClass;
-		weapons.at(i).wTLevel = wResults.at(i).wTLevel;		
+		weapons.at(i).wTLevel = wResults.at(i).wTLevel;
 		weapons.at(i).wPReq = wResults.at(i).wPReq;
 		weapons.at(i).wCReq = wResults.at(i).wCReq;
 		weapons.at(i).wRReq = wResults.at(i).wRReq;
 		weapons.at(i).wACap = wResults.at(i).wACap;
-		weapons.at(i).wACon = wResults.at(i).wACon;		
+		weapons.at(i).wACon = wResults.at(i).wACon;
 		weapons.at(i).wMDmg = wResults.at(i).wMDmg;
 		weapons.at(i).wMxDmg = wResults.at(i).wMxDmg;
 		weapons.at(i).wDILow = wResults.at(i).wDILow;
@@ -661,13 +580,13 @@ void Database::returnWResult(vector<weapon>& weapons) {
 		weapons.at(i).wMTDistance = wResults.at(i).wMTDistance;
 		weapons.at(i).wMOTDistance = wResults.at(i).wMOTDistance;
 		weapons.at(i).wMxOTDistance = wResults.at(i).wMxOTDistance;
-		weapons.at(i).wMxTDistance = wResults.at(i).wMxTDistance;		
+		weapons.at(i).wMxTDistance = wResults.at(i).wMxTDistance;
 		weapons.at(i).wPCon = wResults.at(i).wPCon;
 		weapons.at(i).wIPCon = wResults.at(i).wIPCon;
 		weapons.at(i).wMCDur = wResults.at(i).wMCDur;
 		weapons.at(i).wMCYld = wResults.at(i).wMCYld;
 		weapons.at(i).wMass = wResults.at(i).wMass;
-		weapons.at(i).wSG2 = wResults.at(i).wSG2;		
+		weapons.at(i).wSG2 = wResults.at(i).wSG2;
 		weapons.at(i).wXCost = wResults.at(i).wXCost;
 		weapons.at(i).wRCost = wResults.at(i).wRCost;
 		weapons.at(i).wDiCost = wResults.at(i).wDiCost;
@@ -693,236 +612,158 @@ void Database::getMResults(bool* bErrors) {
 				mResults.push_back(mission());
 
 				for (i = 0; i <= cols; i++) {
-					switch(i) {
+					switch (i) {
 					case 0:
-						mResults.at(0).mID = sqlite3_column_int(statement,i);
+						mResults.at(0).mID = sqlite3_column_int(statement, i);
 						break;
 
 					case 1:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							mResults.at(0).mName = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 2:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							mResults.at(0).mDesc = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 3:
-						mResults.at(0).mCBELevel = sqlite3_column_int(statement,i);
+						mResults.at(0).mCBELevel = sqlite3_column_int(statement, i);
 						break;
 
 					case 4:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							mResults.at(0).mSCReq = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 5:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							mResults.at(0).mMWReq = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 6:
-						mResults.at(0).mTLimit = sqlite3_column_int(statement,i);
+						mResults.at(0).mTLimit = sqlite3_column_int(statement, i);
 						break;
 
 					case 7:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							mResults.at(0).mDifficulty = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 8:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							mResults.at(0).mSector = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 9:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							mResults.at(0).mSystem = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
-
 					case 10:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							mResults.at(0).mTName = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 11:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							mResults.at(0).mTSClass = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 12:
-						mResults.at(0).mBounty = sqlite3_column_int(statement,i);
+						mResults.at(0).mBounty = sqlite3_column_int(statement, i);
 						break;
 
 					case 13:
-						mResults.at(0).mXarn = sqlite3_column_int(statement,i);
+						mResults.at(0).mXarn = sqlite3_column_int(statement, i);
 						break;
 
 					case 14:
-						mResults.at(0).mRubies = sqlite3_column_int(statement,i);
+						mResults.at(0).mRubies = sqlite3_column_int(statement, i);
 						break;
 
 					case 15:
-						mResults.at(0).mDiamonds = sqlite3_column_int(statement,i);
+						mResults.at(0).mDiamonds = sqlite3_column_int(statement, i);
 						break;
 
 					case 16:
-						mResults.at(0).mDraconic = sqlite3_column_int(statement,i);
+						mResults.at(0).mDraconic = sqlite3_column_int(statement, i);
 						break;
 
 					case 17:
-						mResults.at(0).mLithium = sqlite3_column_int(statement,i);
+						mResults.at(0).mLithium = sqlite3_column_int(statement, i);
 						break;
 
 					case 18:
-						mResults.at(0).mPlatinum = sqlite3_column_int(statement,i);
+						mResults.at(0).mPlatinum = sqlite3_column_int(statement, i);
 						break;
 
 					case 19:
-						mResults.at(0).mUranium = sqlite3_column_int(statement,i);
+						mResults.at(0).mUranium = sqlite3_column_int(statement, i);
 						break;
 
 					case 20:
-						mResults.at(0).mPlutonium = sqlite3_column_int(statement,i);
+						mResults.at(0).mPlutonium = sqlite3_column_int(statement, i);
 						break;
 
 					case 21:
-						mResults.at(0).mNWaste = sqlite3_column_int(statement,i);
+						mResults.at(0).mNWaste = sqlite3_column_int(statement, i);
 						break;
 
 					case 22:
-						mResults.at(0).mCEXP = sqlite3_column_int(statement,i);
+						mResults.at(0).mCEXP = sqlite3_column_int(statement, i);
 						break;
 
 					case 23:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)){
 							mResults.at(0).mItem = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 24:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							mResults.at(0).mType = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -934,25 +775,22 @@ void Database::getMResults(bool* bErrors) {
 					}
 				}
 			}
-
 			else {
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
 		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
 	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -1006,19 +844,12 @@ void Database::getMesResults(bool* bErrors) {
 				mesResults.push_back(message());
 
 				for (i = 0; i <= cols; i++) {
-					switch(i) {
+					switch (i) {
 					case 1:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							mesResults.at(0).mes = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1030,40 +861,36 @@ void Database::getMesResults(bool* bErrors) {
 					}
 				}
 			}
-
 			else {
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
 		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 8", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
 	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnMesResult(vector<message>& messages) {
+void Database::returnMesResult(vector<message>& messages){
 	for (i = 0; i < mesResults.size(); i++) {
 		messages.push_back(message());
 
 		messages.at(i).mes = mesResults.at(i).mes;
 	}
 
-	mesResults.clear();
+mesResults.clear();
 }
-
 
 void Database::getPNResults(bool* bErrors) {
 	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
@@ -1078,19 +905,12 @@ void Database::getPNResults(bool* bErrors) {
 					pNResults.push_back(planetName());
 
 					for (i2 = 0; i2 <= cols; i2++) {
-						switch(i2) {
+						switch (i2) {
 						case 1:
-							data = (char*)sqlite3_column_text(statement,1);
+							data = (char*)sqlite3_column_text(statement, 1);
 
-							if (data != NULL) {
+							if (checkValidity(data, bErrors)) {
 								pNResults.at(i).pName = data;
-								*bErrors = false;
-							}
-
-							else {
-								*bErrors = true;
-								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
@@ -1102,33 +922,29 @@ void Database::getPNResults(bool* bErrors) {
 						}
 					}
 				}
-
 				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
-
 		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
 	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
 void Database::returnPNResult(vector<planetName>& pNames) {
-
 	for (i = 0; i < pNResults.size(); i++) {
 		pNames.push_back(planetName());
 
@@ -1150,19 +966,12 @@ void Database::getDResults(bool* bErrors) {
 				dResults.push_back(diplomacy());
 
 				for (i = 0; i <= cols; i++) {
-					switch(i) {
+					switch (i) {
 					case 1:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							dResults.at(0).dDisposition = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1174,25 +983,22 @@ void Database::getDResults(bool* bErrors) {
 					}
 				}
 			}
-
 			else {
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
 		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
 	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -1219,19 +1025,12 @@ void Database::getRResults(bool* bErrors) {
 				rResults.push_back(ranks());
 
 				for (i = 0; i <= cols; i++) {
-					switch(i) {
+					switch (i) {
 					case 1:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							rResults.at(0).rkName = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1243,25 +1042,22 @@ void Database::getRResults(bool* bErrors) {
 					}
 				}
 			}
-
 			else {
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
 		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
 	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -1289,19 +1085,12 @@ void Database::getRcResults(bool* bErrors) {
 				rcResults.push_back(race());
 
 				for (i = 0; i <= cols; i++) {
-					switch(i) {
+					switch (i) {
 					case 1:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							rcResults.at(0).rName = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1317,21 +1106,19 @@ void Database::getRcResults(bool* bErrors) {
 			else {
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
 		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
 	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -1358,69 +1145,48 @@ void Database::getPSResults(bool* bErrors) {
 				psResults.push_back(pshield());
 
 				for (i = 0; i <= cols; i++) {
-					switch(i) {
+					switch (i) {
 					case 0:
-						psResults.at(0).psID = sqlite3_column_int(statement,i);
+						psResults.at(0).psID = sqlite3_column_int(statement, i);
 						break;
 
 					case 1:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							psResults.at(0).psName = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 2:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							psResults.at(0).psDesc = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 3:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							psResults.at(0).psType = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 5:
-						psResults.at(0).psTLevel = sqlite3_column_int(statement,i);
+						psResults.at(0).psTLevel = sqlite3_column_int(statement, i);
 						break;
 
 					case 6:
-						psResults.at(0).psPSystem = sqlite3_column_int(statement,i);
+						psResults.at(0).psPSystem = sqlite3_column_int(statement, i);
 						break;
 
 					case 7:
-						psResults.at(0).psCPU = sqlite3_column_int(statement,i);
+						psResults.at(0).psCPU = sqlite3_column_int(statement, i);
 						break;
 
 					case 8:
@@ -1440,39 +1206,39 @@ void Database::getPSResults(bool* bErrors) {
 						break;
 
 					case 12:
-						psResults.at(0).psSG2 = sqlite3_column_int(statement,i);
+						psResults.at(0).psSG2 = sqlite3_column_int(statement, i);
 						break;
 
 					case 13:
-						psResults.at(0).psXCost = sqlite3_column_int(statement,i);
+						psResults.at(0).psXCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 14:
-						psResults.at(0).psRCost = sqlite3_column_int(statement,i);
+						psResults.at(0).psRCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 15:
-						psResults.at(0).psDiCost = sqlite3_column_int(statement,i);
+						psResults.at(0).psDiCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 16:
-						psResults.at(0).psDCost = sqlite3_column_int(statement,i);
+						psResults.at(0).psDCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 17:
-						psResults.at(0).psLCost = sqlite3_column_int(statement,i);
+						psResults.at(0).psLCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 18:
-						psResults.at(0).psUCost = sqlite3_column_int(statement,i);
+						psResults.at(0).psUCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 19:
-						psResults.at(0).psPluCost = sqlite3_column_int(statement,i);
+						psResults.at(0).psPluCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 20:
-						psResults.at(0).psNWCost = sqlite3_column_int(statement,i);
+						psResults.at(0).psNWCost = sqlite3_column_int(statement, i);
 						break;
 
 					default:
@@ -1482,25 +1248,22 @@ void Database::getPSResults(bool* bErrors) {
 					}
 				}
 			}
-
 			else {
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
 		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
 	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -1547,55 +1310,34 @@ void Database::getPlDefResults(bool* bErrors) {
 				pdResults.push_back(pdefense());
 
 				for (i = 0; i <= cols; i++) {
-					switch(i) {
+					switch (i) {
 					case 0:
-						pdResults.at(0).pdID = sqlite3_column_int(statement,i);
+						pdResults.at(0).pdID = sqlite3_column_int(statement, i);
 						break;
 
 					case 1:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							pdResults.at(0).pdName = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 2:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							pdResults.at(0).pdDesc = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 3:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							pdResults.at(0).pdClass = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1603,33 +1345,26 @@ void Database::getPlDefResults(bool* bErrors) {
 					case 4:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							pdResults.at(0).pdSClass = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
 
 					case 5:
-						pdResults.at(0).pdTLevel = sqlite3_column_int(statement,i);
+						pdResults.at(0).pdTLevel = sqlite3_column_int(statement, i);
 						break;
 
 					case 6:
-						pdResults.at(0).pdCPU = sqlite3_column_int(statement,i);
+						pdResults.at(0).pdCPU = sqlite3_column_int(statement, i);
 						break;
 
 					case 7:
-						pdResults.at(0).pdRAM = sqlite3_column_int(statement,i);
+						pdResults.at(0).pdRAM = sqlite3_column_int(statement, i);
 						break;
 
 					case 8:
-						pdResults.at(0).pdPSys = sqlite3_column_int(statement,i);
+						pdResults.at(0).pdPSys = sqlite3_column_int(statement, i);
 						break;
 
 					case 9:
@@ -1653,7 +1388,7 @@ void Database::getPlDefResults(bool* bErrors) {
 						break;
 
 					case 14:
-						pdResults.at(0).pdTSlots = sqlite3_column_int(statement,i);
+						pdResults.at(0).pdTSlots = sqlite3_column_int(statement, i);
 						break;
 
 					case 15:
@@ -1669,43 +1404,43 @@ void Database::getPlDefResults(bool* bErrors) {
 						break;
 
 					case 18:
-						pdResults.at(0).pdSG2 = (float)sqlite3_column_double(statement,i);
+						pdResults.at(0).pdSG2 = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 19:
-						pdResults.at(0).pdXCost = sqlite3_column_int(statement,i);
+						pdResults.at(0).pdXCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 20:
-						pdResults.at(0).pdRCost = sqlite3_column_int(statement,i);
+						pdResults.at(0).pdRCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 21:
-						pdResults.at(0).pdDiCost = sqlite3_column_int(statement,i);
+						pdResults.at(0).pdDiCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 22:
-						pdResults.at(0).pdDCost = sqlite3_column_int(statement,i);
+						pdResults.at(0).pdDCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 23:
-						pdResults.at(0).pdLCost = sqlite3_column_int(statement,i);
+						pdResults.at(0).pdLCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 24:
-						pdResults.at(0).pdUCost = sqlite3_column_int(statement,i);
+						pdResults.at(0).pdUCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 25:
-						pdResults.at(0).pdPluCost = sqlite3_column_int(statement,i);
+						pdResults.at(0).pdPluCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 26:
-						pdResults.at(0).pdNWCost = sqlite3_column_int(statement,i);
+						pdResults.at(0).pdNWCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 27:
-						pdResults.at(0).pdCXP = sqlite3_column_int(statement,i);
+						pdResults.at(0).pdCXP = sqlite3_column_int(statement, i);
 						break;
 
 					default:
@@ -1715,25 +1450,22 @@ void Database::getPlDefResults(bool* bErrors) {
 					}
 				}
 			}
-
 			else {
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
 		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
 	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
@@ -1777,120 +1509,87 @@ void Database::returnPlDefResults(vector<pdefense>& pDefense) {
 }
 
 
-void Database::getCResults(bool* bErrors)
-{
-	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-	{
+void Database::getCResults(bool* bErrors) {
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 		result = sqlite3_step(statement);
 
-		if (result == SQLITE_ROW)
-		{
+		if (result == SQLITE_ROW) {
 			cols = sqlite3_column_count(statement);
 
-			if (cols != 0)
-			{
+			if (cols != 0) {
 				cResults.push_back(clone());
 
-				for (i = 0; i <= cols; i++)
-				{
-					switch(i)
-					{
+				for (i = 0; i <= cols; i++) {
+					switch (i) {
 					case 0:
-						cResults.at(0).cID = sqlite3_column_int(statement,i);
+						cResults.at(0).cID = sqlite3_column_int(statement, i);
 						break;
 
 					case 1:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							cResults.at(0).cName = data;
-							*bErrors = false;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 2:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							cResults.at(0).cDesc = data;
-							*bErrors = false;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 3:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							cResults.at(0).cClass = data;
-							*bErrors = false;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 4:
-						cResults.at(0).cTLevel = sqlite3_column_int(statement,i);
+						cResults.at(0).cTLevel = sqlite3_column_int(statement, i);
 						break;
 
 					case 5:
-						cResults.at(0).cSG2 = (float)sqlite3_column_double(statement,i);
+						cResults.at(0).cSG2 = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 6:
-						cResults.at(0).cXCost = sqlite3_column_int(statement,i);
+						cResults.at(0).cXCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 7:
-						cResults.at(0).cRCost = sqlite3_column_int(statement,i);
+						cResults.at(0).cRCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 8:
-						cResults.at(0).cDiCost = sqlite3_column_int(statement,i);
+						cResults.at(0).cDiCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 9:
-						cResults.at(0).cDCost = sqlite3_column_int(statement,i);
+						cResults.at(0).cDCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 10:
-						cResults.at(0).cLCost = sqlite3_column_int(statement,i);
+						cResults.at(0).cLCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 11:
-						cResults.at(0).cUCost = sqlite3_column_int(statement,i);
+						cResults.at(0).cUCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 12:
-						cResults.at(0).cPluCost = sqlite3_column_int(statement,i);
+						cResults.at(0).cPluCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 13:
-						cResults.at(0).cNWCost = sqlite3_column_int(statement,i);
+						cResults.at(0).cNWCost = sqlite3_column_int(statement, i);
 						break;
 
 					default:
@@ -1900,37 +1599,29 @@ void Database::getCResults(bool* bErrors)
 					}
 				}
 			}
-
-			else
-			{
+			else {
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnCResults(vector<clone>& iClone)
-{
-	for (i = 0; i < cResults.size(); i++)
-	{
+void Database::returnCResults(vector<clone>& iClone) {
+	for (i = 0; i < cResults.size(); i++) {
 		iClone.push_back(clone());
 
 		iClone.at(i).cID = cResults.at(i).cID;
@@ -1953,38 +1644,23 @@ void Database::returnCResults(vector<clone>& iClone)
 }
 
 //Name
-void Database::getRNPResults(bool* bErrors)
-{
-	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-	{
+void Database::getRNPResults(bool* bErrors) {
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 		result = sqlite3_step(statement);
 
-		if (result == SQLITE_ROW)
-		{
+		if (result == SQLITE_ROW) {
 			cols = sqlite3_column_count(statement);
 
-			if (cols != 0)
-			{
+			if (cols != 0) {
 				nPResults.push_back(name_pre());
 
-				for (i = 0; i <= cols; i++)
-				{
-					switch(i)
-					{
+				for (i = 0; i <= cols; i++) {
+					switch (i) {
 					case 1:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							nPResults.at(i).nPrefix = data;
-							*bErrors = false;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -1996,37 +1672,29 @@ void Database::getRNPResults(bool* bErrors)
 					}
 				}
 			}
-
-			else
-			{
+			else {
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnRNPResults(vector<name_pre>& names)
-{
-	for (i = 0; i < nPResults.size(); i++)
-	{
+void Database::returnRNPResults(vector<name_pre>& names) {
+	for (i = 0; i < nPResults.size(); i++) {
 		names.push_back(name_pre());
 
 		names.at(0).nPrefix = nPResults.at(0).nPrefix;
@@ -2050,15 +1718,8 @@ void Database::getRNRResults(bool* bErrors) {
 					case 1:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							nRResults.at(i).nRoot = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -2070,21 +1731,18 @@ void Database::getRNRResults(bool* bErrors) {
 					}
 				}
 			}
-
 			else {
 				*bErrors = true;
 				createBInfo();
 				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
 		else {
 			*bErrors = true;
 			createBInfo();
 			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
 	else {
 		*bErrors = true;
 		createBInfo();
@@ -2119,15 +1777,8 @@ void Database::getRNSResults(bool* bErrors) {
 					case 1:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							nSResults.at(i).nSuffix = data;
-							*bErrors = false;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -2139,21 +1790,18 @@ void Database::getRNSResults(bool* bErrors) {
 					}
 				}
 			}
-
 			else {
 				*bErrors = true;
 				createBInfo();
 				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
 		else {
 			*bErrors = true;
 			createBInfo();
 			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
 	else {
 		*bErrors = true;
 		createBInfo();
@@ -2174,77 +1822,46 @@ void Database::returnRNSResults(vector<name_suf>& names) {
 }
 
 //Resource
-void Database::getRDResults(bool* bErrors)
-{
-	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-	{
+void Database::getRDResults(bool* bErrors) {
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 		result = sqlite3_step(statement);
 
-		if (result == SQLITE_ROW)
-		{
+		if (result == SQLITE_ROW) {
 			cols = sqlite3_column_count(statement);
 
-			if (cols != 0)
-			{
+			if (cols != 0) {
 				resResults.push_back(resource());
 
-				for (i = 0; i <= cols; i++)
-				{
-					switch(i)
-					{
+				for (i = 0; i <= cols; i++) {
+					switch (i) {
 
 					case 1:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							resResults.at(0).rName = data;
-							*bErrors = false;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 2:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							resResults.at(0).rDesc = data;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 3:
-						resResults.at(0).rSG2 = (float)sqlite3_column_double(statement,i);
+						resResults.at(0).rSG2 = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 4:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							resResults.at(0).rType = data;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -2256,37 +1873,29 @@ void Database::getRDResults(bool* bErrors)
 					}
 				}
 			}
-
-			else
-			{
+			else {
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnRDResults(vector<resource>& resources)
-{
-	for (i = 0; i < resResults.size(); i++)
-	{
+void Database::returnRDResults(vector<resource>& resources) {
+	for (i = 0; i < resResults.size(); i++) {
 		resources.push_back(resource());
 
 		resources.at(0).rName = resResults.at(0).rName;
@@ -2298,141 +1907,94 @@ void Database::returnRDResults(vector<resource>& resources)
 	resResults.clear();
 }
 
-void Database::getOResults(bool* bErrors)
-{
-	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-	{
+void Database::getOResults(bool* bErrors) {
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 		result = sqlite3_step(statement);
 
-		if (result == SQLITE_ROW)
-		{
+		if (result == SQLITE_ROW) {
 			cols = sqlite3_column_count(statement);
 
-			if (cols != 0)
-			{
+			if (cols != 0) {
 				oResults.push_back(ore());
 
-				for (i = 0; i <= cols; i++)
-				{
-					switch(i)
-					{
+				for (i = 0; i <= cols; i++) {
+					switch (i) {
 
 					case 1:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							oResults.at(0).oName = data;
-							*bErrors = false;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 2:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							oResults.at(0).oDesc = data;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 3:
-						oResults.at(0).oSG2 = (float)sqlite3_column_double(statement,i);
+						oResults.at(0).oSG2 = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 4:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							oResults.at(0).oType = data;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 5:
-						oResults.at(0).oStage = sqlite3_column_int(statement,i);
+						oResults.at(0).oStage = sqlite3_column_int(statement, i);
 						break;
 
 					case 6:
-						oResults.at(0).oBSize = (float)sqlite3_column_double(statement,i);
+						oResults.at(0).oBSize = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 7:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							oResults.at(0).oResource = data;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 8:
-						data = (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							oResults.at(0).oOre = data;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 9:
-						oResults.at(0).oRUnits = sqlite3_column_int(statement,i);
+						oResults.at(0).oRUnits = sqlite3_column_int(statement, i);
 						break;
 
 					case 10:
-						oResults.at(0).oRProduced = sqlite3_column_int(statement,i);
+						oResults.at(0).oRProduced = sqlite3_column_int(statement, i);
 						break;
 
 					case 11:
-						oResults.at(0).oRCost = sqlite3_column_int(statement,i);
+						oResults.at(0).oRCost = sqlite3_column_int(statement, i);
 						break;
 
 					case 12:
-						oResults.at(0).oRPLoss = (float)sqlite3_column_double(statement,i);
+						oResults.at(0).oRPLoss = (float)sqlite3_column_double(statement, i);
 						break;
 
 					case 13:
-						oResults.at(0).oXCost = sqlite3_column_int(statement,i);
+						oResults.at(0).oXCost = sqlite3_column_int(statement, i);
 						break;
 
 					default:
@@ -2442,37 +2004,29 @@ void Database::getOResults(bool* bErrors)
 					}
 				}
 			}
-
-			else
-			{
+			else {
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnOResults(vector<ore>& ores)
-{
-	for (i = 0; i < oResults.size(); i++)
-	{
+void Database::returnOResults(vector<ore>& ores) {
+	for (i = 0; i < oResults.size(); i++) {
 		ores.push_back(ore());
 
 		ores.at(0).oName = oResults.at(0).oName;
@@ -2495,39 +2049,24 @@ void Database::returnOResults(vector<ore>& ores)
 
 
 //Skill Data
-void Database::getSkResults(bool* bErrors)
-{
-	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-	{
+void Database::getSkResults(bool* bErrors) {
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 		result = sqlite3_step(statement);
 
-		if (result == SQLITE_ROW)
-		{
+		if (result == SQLITE_ROW) {
 			cols = sqlite3_column_count(statement);
 
-			if (cols != 0)
-			{
+			if (cols != 0) {
 				skResults.push_back(skill());
 
-				for (i = 0; i <= cols; i++)
-				{
-					switch (i)
-					{
+				for (i = 0; i <= cols; i++) {
+					switch (i) {
 
 					case 1:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							skResults.at(0).skName = data;
-							*bErrors = false;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -2535,16 +2074,8 @@ void Database::getSkResults(bool* bErrors)
 					case 2:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							skResults.at(0).skDesc = data;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -2552,32 +2083,16 @@ void Database::getSkResults(bool* bErrors)
 					case 3:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							skResults.at(0).skEffect = data;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 						break;
 
 					case 4:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							skResults.at(0).skType = data;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -2585,16 +2100,8 @@ void Database::getSkResults(bool* bErrors)
 					case 5:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							skResults.at(0).skSGroup = data;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 						break;
 
@@ -2624,25 +2131,19 @@ void Database::getSkResults(bool* bErrors)
 					}
 				}
 			}
-
-			else
-			{
+			else {
 				*bErrors = true;
 				createBInfo();
 				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
 			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
 		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
@@ -2651,10 +2152,8 @@ void Database::getSkResults(bool* bErrors)
 	finalize(statement, bErrors);
 }
 
-void Database::returnSkResults(vector<skill>& skills)
-{
-	for (i = 0; i < skResults.size(); i++)
-	{
+void Database::returnSkResults(vector<skill>& skills) {
+	for (i = 0; i < skResults.size(); i++) {
 		skills.push_back(skill());
 
 		skills.at(0).skName = skResults.at(0).skName;
@@ -2671,30 +2170,23 @@ void Database::returnSkResults(vector<skill>& skills)
 	skResults.clear();
 }
 
-void Database::getCPUResults(bool * bErrors){
-	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK){
+void Database::getCPUResults(bool * bErrors) {
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 		result = sqlite3_step(statement);
 
-		if (result == SQLITE_ROW){
+		if (result == SQLITE_ROW) {
 			cols = sqlite3_column_count(statement);
 
-			if (cols != 0){
+			if (cols != 0) {
 				seCPUResults.push_back(cpu());
 
-				for (i = 0; i <= cols; i++){
-					switch (i){
+				for (i = 0; i <= cols; i++) {
+					switch (i) {
 					case 1:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL){
+						if (checkValidity(data, bErrors)) {
 							seCPUResults.at(0).seName = data;
-							*bErrors = false;
-						}
-
-						else{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -2702,14 +2194,8 @@ void Database::getCPUResults(bool * bErrors){
 					case 2:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL){
+						if (checkValidity(data, bErrors)) {
 							seCPUResults.at(0).seDesc = data;
-						}
-
-						else{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -2717,14 +2203,8 @@ void Database::getCPUResults(bool * bErrors){
 					case 3:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL) {
+						if (checkValidity(data, bErrors)) {
 							seCPUResults.at(0).seType = data;
-						}
-
-						else {
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 						}
 
 						break;
@@ -2732,7 +2212,7 @@ void Database::getCPUResults(bool * bErrors){
 					case 4:
 						seCPUResults.at(0).seTLevel = sqlite3_column_int(statement, i);
 						break;
-						
+
 					case 5:
 						seCPUResults.at(0).sePReq = (float)sqlite3_column_double(statement, i);
 						break;
@@ -2784,22 +2264,19 @@ void Database::getCPUResults(bool * bErrors){
 					}
 				}
 			}
-
-			else{
+			else {
 				*bErrors = true;
 				createBInfo();
 				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
-		else{
+		else {
 			*bErrors = true;
 			createBInfo();
 			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
-	else{
+	else {
 		*bErrors = true;
 		createBInfo();
 		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
@@ -2808,8 +2285,8 @@ void Database::getCPUResults(bool * bErrors){
 	finalize(statement, bErrors);
 }
 
-void Database::returnCPUResults(vector<cpu>& sCpu){
-	for (i = 0; i < skResults.size(); i++){
+void Database::returnCPUResults(vector<cpu>& sCpu) {
+	for (i = 0; i < skResults.size(); i++) {
 		sCpu.push_back(cpu());
 
 		sCpu.at(0).seName = seCPUResults.at(0).seName;
@@ -2832,100 +2309,75 @@ void Database::returnCPUResults(vector<cpu>& sCpu){
 	skResults.clear();
 }
 
-void Database::getRAMResults(bool * bErrors)
-{
+void Database::getRAMResults(bool * bErrors) {
 }
 
-void Database::returnRAMResults(vector<ram>& sRam)
-{
+void Database::returnRAMResults(vector<ram>& sRam) {
 }
 
-void Database::getENGResults(bool * bErrors)
-{
+void Database::getENGResults(bool * bErrors) {
 }
 
-void Database::returnENGResults(vector<eng>& sEng)
-{
+void Database::returnENGResults(vector<eng>& sEng) {
 }
 
-void Database::getPSyResults(bool * bErrors)
-{
+void Database::getPSyResults(bool * bErrors) {
 }
 
-void Database::returnPSyResults(vector<psys>& sPSystem)
-{
+void Database::returnPSyResults(vector<psys>& sPSystem) {
 }
 
-void Database::getSPSResults(bool * bErrors)
-{
+void Database::getSPSResults(bool * bErrors) {
 }
 
-void Database::returnSPSResults(vector<spsys>& sCap)
-{
+void Database::returnSPSResults(vector<spsys>& sCap) {
 }
 
-void Database::getWFGResults(bool * bErrors)
-{
+void Database::getWFGResults(bool * bErrors) {
 }
 
-void Database::returnWFGResults(vector<wfg>& sWFGen)
-{
+void Database::returnWFGResults(vector<wfg>& sWFGen) {
 }
 
-void Database::getWTSResults(bool * bErrors)
-{
+void Database::getWTSResults(bool * bErrors) {
 }
 
-void Database::returnWTSResults(vector<wts>& sWTSystem)
-{
+void Database::returnWTSResults(vector<wts>& sWTSystem) {
 }
 
-void Database::getSMResults(bool * bErrors)
-{
+void Database::getSMResults(bool * bErrors) {
 }
 
-void Database::returnSMResults(vector<sm>& sSMatrix)
-{
+void Database::returnSMResults(vector<sm>& sSMatrix) {
 }
 
-void Database::getAPResults(bool * bErrors)
-{
+void Database::getAPResults(bool * bErrors) {
 }
 
-void Database::returnAPResults(vector<ap>& sAPlating)
-{
+void Database::returnAPResults(vector<ap>& sAPlating) {
 }
 
-void Database::getHSSResults(bool * bErrors)
-{
+void Database::getHSSResults(bool * bErrors) {
 }
 
-void Database::returnHSSResults(vector<hss>& sHSStruct)
-{
+void Database::returnHSSResults(vector<hss>& sHSStruct) {
 }
 
-void Database::returnReqResults(bool* errors)
-{
-	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-	{
+void Database::returnReqResults(bool* bErrors) {
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 		result = sqlite3_step(statement);
 
-		if (result == SQLITE_ROW)
-		{
+		if (result == SQLITE_ROW) {
 			cols = sqlite3_column_count(statement);
 
-			if (cols != 0)
-			{
+			if (cols != 0) {
 				reqResults.push_back(req());
 
-				for (i = 0; i <= cols; i++)
-				{
-					switch (i)
-					{
-						
+				for (i = 0; i <= cols; i++) {
+					switch (i) {
+
 					case 1:
 						reqResults.at(0).rEID = sqlite3_column_int(statement, i);
-
 						break;
 
 					case 2:
@@ -2935,17 +2387,10 @@ void Database::returnReqResults(bool* errors)
 					case 3:
 						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							reqResults.at(0).rType = data;
 						}
 
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
-						}
 						break;
 
 					default:
@@ -2955,25 +2400,19 @@ void Database::returnReqResults(bool* errors)
 					}
 				}
 			}
-
-			else
-			{
+			else {
 				*bErrors = true;
 				createBInfo();
 				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
 			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
 		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
@@ -2982,15 +2421,13 @@ void Database::returnReqResults(bool* errors)
 	finalize(statement, bErrors);
 }
 
-void Database::returnReqResults(vector<req> reqs)
-{
-	for (i = 0; i < reqResults.size(); i++)
-	{
+void Database::returnReqResults(vector<req> reqs) {
+	for (i = 0; i < reqResults.size(); i++) {
 		reqResults.push_back(req());
 
 		reqs.at(0).rEID = reqResults.at(0).rEID;
 		reqs.at(0).rRID = reqResults.at(0).rRID;
-		reqs.at(0).rType = reqResults.at(0).rType;		
+		reqs.at(0).rType = reqResults.at(0).rType;
 	}
 
 	reqResults.clear();
@@ -3004,159 +2441,126 @@ void Database::returnReqResults(vector<req> reqs)
 //Loading Functions
 
 //Player Data
-void Database::getPDataResults(bool* bErrors)
-{
-	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-	{
+void Database::getPDataResults(bool* bErrors) {
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 		result = sqlite3_step(statement);
 
-		if (result == SQLITE_ROW)
-		{
+		if (result == SQLITE_ROW) {
 			cols = sqlite3_column_count(statement);
 
-			if (cols != 0)
-			{
+			if (cols != 0) {
 				pDataResults.push_back(playerData());
 
-				for (i = 0; i <= cols; i++)
-				{
-					switch(i)
-					{
+				for (i = 0; i <= cols; i++) {
+					switch (i) {
 
 					case 1:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							pDataResults.at(0).pName = data;
-							*bErrors = false;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 2:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							pDataResults.at(0).pRank = data;
-							*bErrors = false;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
 
 					case 3:
-						pDataResults.at(0).pCXPLevel = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pCXPLevel = sqlite3_column_int(statement, i);
 						break;
 
 					case 4:
-						pDataResults.at(0).pPDestroyed = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pPDestroyed = sqlite3_column_int(statement, i);
 						break;
 
 					case 5:
-						pDataResults.at(0).pFKills = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pFKills = sqlite3_column_int(statement, i);
 						break;
 
 					case 6:
-						pDataResults.at(0).pDKills = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pDKills = sqlite3_column_int(statement, i);
 						break;
 
 					case 7:
-						pDataResults.at(0).pCKills = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pCKills = sqlite3_column_int(statement, i);
 						break;
 
 					case 8:
-						pDataResults.at(0).pBCKills = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pBCKills = sqlite3_column_int(statement, i);
 						break;
 
 					case 9:
-						pDataResults.at(0).pBKills = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pBKills = sqlite3_column_int(statement, i);
 						break;
 
 					case 10:
-						pDataResults.at(0).pCSKills = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pCSKills = sqlite3_column_int(statement, i);
 						break;
 
 					case 11:
-						pDataResults.at(0).pMKills = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pMKills = sqlite3_column_int(statement, i);
 						break;
 
 					case 12:
-						pDataResults.at(0).pTKills = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pTKills = sqlite3_column_int(statement, i);
 						break;
 
 					case 13:
-						pDataResults.at(0).pCEXP = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pCEXP = sqlite3_column_int(statement, i);
 						break;
 
 					case 14:
-						pDataResults.at(0).pCXPTNL = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pCXPTNL = sqlite3_column_int(statement, i);
 						break;
 
 					case 15:
-						pDataResults.at(0).pXarn = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pXarn = sqlite3_column_int(statement, i);
 						break;
 
 					case 16:
-						pDataResults.at(0).pRubies = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pRubies = sqlite3_column_int(statement, i);
 						break;
 
 					case 17:
-						pDataResults.at(0).pDiamonds = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pDiamonds = sqlite3_column_int(statement, i);
 						break;
 
 					case 18:
-						pDataResults.at(0).pDrac = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pDrac = sqlite3_column_int(statement, i);
 						break;
 
 					case 19:
-						pDataResults.at(0).pLith = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pLith = sqlite3_column_int(statement, i);
 						break;
 
 					case 20:
-						pDataResults.at(0).pPla = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pPla = sqlite3_column_int(statement, i);
 						break;
 
 					case 21:
-						pDataResults.at(0).pUra = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pUra = sqlite3_column_int(statement, i);
 						break;
 
 					case 22:
-						pDataResults.at(0).pPlu = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pPlu = sqlite3_column_int(statement, i);
 						break;
 
 					case 23:
-						pDataResults.at(0).pNWaste = sqlite3_column_int(statement,i);
+						pDataResults.at(0).pNWaste = sqlite3_column_int(statement, i);
 						break;
 
 					case 24:
-						data =  (char*)sqlite3_column_text(statement,i);
+						data = (char*)sqlite3_column_text(statement, i);
 
-						if (data != NULL)
-						{
+						if (checkValidity(data, bErrors)) {
 							pDataResults.at(0).pAffiliation = data;
-							*bErrors = false;
-						}
-
-						else
-						{
-							*bErrors = true;
-							createBInfo();
-							dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 						}
 
 						break;
@@ -3168,37 +2572,29 @@ void Database::getPDataResults(bool* bErrors)
 					}
 				}
 			}
-
-			else
-			{
+			else {
 				*bErrors = true;
 				createBInfo();
-				dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+				dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			}
 		}
-
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnPDataResults(vector<playerData>& pData)
-{
-	for (i = 0; i < pDataResults.size(); i++)
-	{
+void Database::returnPDataResults(vector<playerData>& pData) {
+	for (i = 0; i < pDataResults.size(); i++) {
 		pData.push_back(playerData());
 
 		pData.at(i).pName = pDataResults.at(i).pName;
@@ -3230,180 +2626,146 @@ void Database::returnPDataResults(vector<playerData>& pData)
 	pDataResults.clear();
 }
 
-//Player Ship
-void Database::getPShipResults(bool* bErrors)
-{
+//Player Ship - TODO fix switch to reflect ship equipment changes (check database table for this too)
+void Database::getPShipResults(bool* bErrors) {
 	rows = getCount("PShip_Data", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows; i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					plShipResults.push_back(pShip());
 
-					for (i = 0; i <= cols; i++)
-					{
-						switch(i)
-						{
-
+					for (i = 0; i <= cols; i++) {
+						switch (i) {
 						case 1:
-							data =  (char*)sqlite3_column_text(statement,i);
+							data = (char*)sqlite3_column_text(statement, i);
 
-							if (data != NULL)
-							{
-								plShipResults.at(plShipResults.size()-1).sName = data;
-								*bErrors = false;
-							}
-
-							else
-							{
-								*bErrors = true;
-								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+							if (checkValidity(data, bErrors)) {
+								plShipResults.at(plShipResults.size() - 1).psName = data;
 							}
 
 							break;
 
 						case 2:
-							data =  (char*)sqlite3_column_text(statement,i);
+							data = (char*)sqlite3_column_text(statement, i);
 
-							if (data != NULL)
-							{
-								plShipResults.at(plShipResults.size()-1).sClass = data;
+							if (checkValidity(data, bErrors)) {
+								plShipResults.at(plShipResults.size() - 1).psClass = data;
 								*bErrors = false;
-							}
-
-							else
-							{
-								*bErrors = true;
-								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
 
 						case 3:
-							plShipResults.at(plShipResults.size()-1).sTLevel = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psTLevel = sqlite3_column_int(statement, i);
 							break;
 
 						case 4:
-							plShipResults.at(plShipResults.size()-1).sSP = (float)sqlite3_column_double(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psSP = (float)sqlite3_column_double(statement, i);
 							break;
 
 						case 5:
-							plShipResults.at(plShipResults.size()-1).sAP = (float)sqlite3_column_double(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psAP = (float)sqlite3_column_double(statement, i);
 							break;
 
 						case 6:
-							plShipResults.at(plShipResults.size()-1).sHP = (float)sqlite3_column_double(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psHP = (float)sqlite3_column_double(statement, i);
 							break;
 
 						case 7:
-							plShipResults.at(plShipResults.size()-1).sMSP = (float)sqlite3_column_double(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psMSP = (float)sqlite3_column_double(statement, i);
 							break;
 
 						case 8:
-							plShipResults.at(plShipResults.size()-1).sMAP = (float)sqlite3_column_double(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psMAP = (float)sqlite3_column_double(statement, i);
 							break;
 
 						case 9:
-							plShipResults.at(plShipResults.size()-1).sMHP = (float)sqlite3_column_double(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psMHP = (float)sqlite3_column_double(statement, i);
 							break;
 
 						case 10:
-							plShipResults.at(plShipResults.size()-1).sMInit = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psMInit = sqlite3_column_int(statement, i);
 							break;
 
 						case 11:
-							plShipResults.at(plShipResults.size()-1).sSG2 = (float)sqlite3_column_double(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psSG2 = (float)sqlite3_column_double(statement, i);
 							break;
 
 						case 12:
-							plShipResults.at(plShipResults.size()-1).sMCSpace = (float)sqlite3_column_double(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psMCSpace = (float)sqlite3_column_double(statement, i);
 							break;
 
 						case 13:
-							plShipResults.at(plShipResults.size()-1).sLB = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psLB = sqlite3_column_int(statement, i);
 							break;
 
 						case 14:
-							plShipResults.at(plShipResults.size()-1).sMT = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psMT = sqlite3_column_int(statement, i);
 							break;
 
 						case 15:
-							plShipResults.at(plShipResults.size()-1).sBH = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psBH = sqlite3_column_int(statement, i);
 							break;
 
 						case 16:
-							plShipResults.at(plShipResults.size()-1).sRM = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psRM = sqlite3_column_int(statement, i);
 							break;
 
 						case 17:
-							plShipResults.at(plShipResults.size()-1).sHWB = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psHWB = sqlite3_column_int(statement, i);
 							break;
 
 						case 18:
-							plShipResults.at(plShipResults.size()-1).sWHP = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).psWHP = sqlite3_column_int(statement, i);
 							break;
 
 						case 19:
-							plShipResults.at(plShipResults.size()-1).sULB = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).sULB = sqlite3_column_int(statement, i);
 							break;
 
 						case 20:
-							plShipResults.at(plShipResults.size()-1).sUMT = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).sUMT = sqlite3_column_int(statement, i);
 							break;
 
 						case 21:
-							plShipResults.at(plShipResults.size()-1).sUBH = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).sUBH = sqlite3_column_int(statement, i);
 							break;
 
 						case 22:
-							plShipResults.at(plShipResults.size()-1).sURM = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).sURM = sqlite3_column_int(statement, i);
 							break;
 
 						case 23:
-							plShipResults.at(plShipResults.size()-1).sUHWB = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).sUHWB = sqlite3_column_int(statement, i);
 							break;
 
 						case 24:
-							plShipResults.at(plShipResults.size()-1).sMWSpreads = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).sMWSpreads = sqlite3_column_int(statement, i);
 							break;
 
 						case 25:
-							plShipResults.at(plShipResults.size()-1).sID = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).sID = sqlite3_column_int(statement, i);
 							break;
 
 						case 26:
-							plShipResults.at(plShipResults.size()-1).sSID = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).sSID = sqlite3_column_int(statement, i);
 							break;
 
 						case 27:
-							plShipResults.at(plShipResults.size()-1).sSTID = sqlite3_column_int(statement,i);
+							plShipResults.at(plShipResults.size() - 1).sSTID = sqlite3_column_int(statement, i);
 							break;
 
 						case 28:
-							data =  (char*)sqlite3_column_text(statement,i);
+							data = (char*)sqlite3_column_text(statement, i);
 
-							if (data != NULL)
-							{
-								plShipResults.at(plShipResults.size()-1).sLocal = data;
-								*bErrors = false;
-							}
-
-							else
-							{
-								*bErrors = true;
-								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+							if (checkValidity(data, bErrors)) {
+								plShipResults.at(plShipResults.size() - 1).sLocal = data;
 							}
 
 							break;
@@ -3415,38 +2777,30 @@ void Database::getPShipResults(bool* bErrors)
 						}
 					}
 				}
-
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
-
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnPShipResults(vector<pShip>& plShip)
-{
-	for (i = 0; i < plShipResults.size(); i++)
-	{
+void Database::returnPShipResults(vector<pShip>& plShip) {
+	for (i = 0; i < plShipResults.size(); i++) {
 		plShip.push_back(pShip());
 
 		plShip.at(i).sName = plShipResults.at(i).sName;
@@ -3483,31 +2837,23 @@ void Database::returnPShipResults(vector<pShip>& plShip)
 }
 
 //Ship Spread/Weapon Vector
-void Database::getPSSResults(bool* bErrors)
-{
+void Database::getPSSResults(bool* bErrors) {
 	rows = getCount("PShip_WSpreads", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows; i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					spreadResults.push_back(pSSpread());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
-
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 						case 0:
-							spreadResults.at(spreadResults.size()-1).sID = sqlite3_column_int(statement,i2); //Vector.size()-1 so that we can have multiple vector rows without having to deal with each row with if/elses
+							spreadResults.at(spreadResults.size() - 1).sID = sqlite3_column_int(statement, i2); //Vector.size()-1 so that we can have multiple vector rows without having to deal with each row with if/elses
 							break;
 
 							/*
@@ -3528,25 +2874,22 @@ void Database::getPSSResults(bool* bErrors)
 							*/
 
 						case 1:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								spreadResults.at(spreadResults.size()-1).sWType = data;
+							if (checkValidity(data, bErrors)) {
+								spreadResults.at(spreadResults.size() - 1).sWType = data;
 								*bErrors = false;
 							}
-
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 2:
-							spreadResults.at(spreadResults.size()-1).sPID = sqlite3_column_int(statement,i2);
+							spreadResults.at(spreadResults.size() - 1).sPID = sqlite3_column_int(statement, i2);
 							break;
 
 						default:
@@ -3556,40 +2899,30 @@ void Database::getPSSResults(bool* bErrors)
 						}
 					}
 				}
-
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
-
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-
-
-void Database::returnPSSResults(vector<pSSpread>& spreads)
-{
-	for (i = 0; i < spreadResults.size(); i++)
-	{
+void Database::returnPSSResults(vector<pSSpread>& spreads) {
+	for (i = 0; i < spreadResults.size(); i++) {
 		spreads.push_back(pSSpread());
 
 		spreads.at(i).sID = spreadResults.at(i).sID;
@@ -3601,50 +2934,34 @@ void Database::returnPSSResults(vector<pSSpread>& spreads)
 }
 
 //Ship HP Vectors
-void Database::getPSHPVResults(bool* bErrors)
-{
+void Database::getPSHPVResults(bool* bErrors) {
 	rows = getCount("PShip_WHPVect", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows; i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					hpvectorResults.push_back(pSHPVect());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 						case 0:
-							hpvectorResults.at(hpvectorResults.size()-1).sID = sqlite3_column_int(statement,i2);
+							hpvectorResults.at(hpvectorResults.size() - 1).sID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 1:
-							hpvectorResults.at(hpvectorResults.size()-1).wID = sqlite3_column_int(statement,i2);
+							hpvectorResults.at(hpvectorResults.size() - 1).wID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 2:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								hpvectorResults.at(hpvectorResults.size()-1).sWType = data;
-								*bErrors = false;
-							}
-
-							else
-							{
-								*bErrors = true;
-								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+							if (checkValidity(data, bErrors)) {
+								hpvectorResults.at(hpvectorResults.size() - 1).sWType = data;
 							}
 
 							break;
@@ -3656,38 +2973,30 @@ void Database::getPSHPVResults(bool* bErrors)
 						}
 					}
 				}
-
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
-
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
-
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnPSHPVResults(vector<pSHPVect>& hpvectors)
-{
-	for (i = 0; i < hpvectorResults.size(); i++)
-	{
+void Database::returnPSHPVResults(vector<pSHPVect>& hpvectors) {
+	for (i = 0; i < hpvectorResults.size(); i++) {
 		hpvectors.push_back(pSHPVect());
 
 		hpvectors.at(i).sID = hpvectorResults.at(i).sID;
@@ -3699,60 +3008,51 @@ void Database::returnPSHPVResults(vector<pSHPVect>& hpvectors)
 }
 
 //Player ship cargo
-void Database::getPSCResults(bool* bErrors)
-{
+void Database::getPSCResults(bool* bErrors) {
 	rows = getCount("PShip_Inv", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows; i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					pSCResults.push_back(pSInv());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 						case 1:
-							pSCResults.at(pSCResults.size()-1).sID = sqlite3_column_int(statement,i2);
+							pSCResults.at(pSCResults.size() - 1).sID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 2:
-							pSCResults.at(pSCResults.size()-1).iID = sqlite3_column_int(statement,i2);
+							pSCResults.at(pSCResults.size() - 1).iID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 3:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pSCResults.at(pSCResults.size()-1).iType = data;
+							if (data != NULL) {
+								pSCResults.at(pSCResults.size() - 1).iType = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 4:
-							pSCResults.at(pSCResults.size()-1).iAmount = sqlite3_column_int(statement,i2);
+							pSCResults.at(pSCResults.size() - 1).iAmount = sqlite3_column_int(statement, i2);
 							break;
 
 						case 5:
-							pSCResults.at(pSCResults.size()-1).iSG2 = (float)sqlite3_column_double(statement,i2);
+							pSCResults.at(pSCResults.size() - 1).iSG2 = (float)sqlite3_column_double(statement, i2);
 							break;
 
 						default:
@@ -3763,37 +3063,32 @@ void Database::getPSCResults(bool* bErrors)
 					}
 				}
 
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnPSCResults(vector<pSInv>& plSCargo)
-{
-	for (i = 0; i < pSCResults.size(); i++)
-	{
+void Database::returnPSCResults(vector<pSInv>& plSCargo) {
+	for (i = 0; i < pSCResults.size(); i++) {
 		plSCargo.push_back(pSInv());
 
 		plSCargo.at(i).sID = pSCResults.at(i).sID;
@@ -3808,67 +3103,56 @@ void Database::returnPSCResults(vector<pSInv>& plSCargo)
 
 
 //Player Wingmen Data
-void Database::getPWMDResults(bool* bErrors)
-{
+void Database::getPWMDResults(bool* bErrors) {
 	rows = getCount("Player_W_Data", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows; i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					pWingmenResults.push_back(pWingmenData());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 
 						case 1:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pWingmenResults.at(pWingmenResults.size()-1).pWName = data;
+							if (data != NULL) {
+								pWingmenResults.at(pWingmenResults.size() - 1).pWName = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 2:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pWingmenResults.at(pWingmenResults.size()-1).pWRank = data;
+							if (data != NULL) {
+								pWingmenResults.at(pWingmenResults.size() - 1).pWRank = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 3:
-							pWingmenResults.at(pWingmenResults.size()-1).pWCXPLevel = sqlite3_column_int(statement,i2);
+							pWingmenResults.at(pWingmenResults.size() - 1).pWCXPLevel = sqlite3_column_int(statement, i2);
 							break;
 
 						default:
@@ -3879,37 +3163,32 @@ void Database::getPWMDResults(bool* bErrors)
 					}
 				}
 
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnPWMDResults(vector<pWingmenData>& pWingmen)
-{
-	for (i = 0; i < pWingmenResults.size(); i++)
-	{
+void Database::returnPWMDResults(vector<pWingmenData>& pWingmen) {
+	for (i = 0; i < pWingmenResults.size(); i++) {
 		pWingmen.push_back(pWingmenData());
 
 		pWingmen.at(i).pWName = pWingmenResults.at(i).pWName;
@@ -3921,145 +3200,134 @@ void Database::returnPWMDResults(vector<pWingmenData>& pWingmen)
 }
 
 //Player Wingmen Ship Data
-void Database::getPWSDResults(bool* bErrors)
-{
+void Database::getPWSDResults(bool* bErrors) {
 	rows = getCount("PWShip_Data", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i2 = 0; i2 < rows; i2++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i2 = 0; i2 < rows; i2++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					pWShipResults.push_back(pWShip());
 
-					for (i = 0; i <= cols; i++)
-					{
-						switch(i)
-						{
+					for (i = 0; i <= cols; i++) {
+						switch (i) {
 						case 1:
-							pWShipResults.at(pWShipResults.size()-1).pWID = sqlite3_column_int(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).pWID = sqlite3_column_int(statement, i2);
 
 						case 2:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pWShipResults.at(pWShipResults.size()-1).sName = data;
+							if (data != NULL) {
+								pWShipResults.at(pWShipResults.size() - 1).sName = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 3:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pWShipResults.at(pWShipResults.size()-1).sClass = data;
+							if (data != NULL) {
+								pWShipResults.at(pWShipResults.size() - 1).sClass = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 4:
-							pWShipResults.at(pWShipResults.size()-1).sTLevel = sqlite3_column_int(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sTLevel = sqlite3_column_int(statement, i2);
 							break;
 
 						case 5:
-							pWShipResults.at(pWShipResults.size()-1).sSP = (float)sqlite3_column_double(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sSP = (float)sqlite3_column_double(statement, i2);
 							break;
 
 						case 6:
-							pWShipResults.at(pWShipResults.size()-1).sAP = (float)sqlite3_column_double(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sAP = (float)sqlite3_column_double(statement, i2);
 							break;
 
 						case 7:
-							pWShipResults.at(pWShipResults.size()-1).sHP = (float)sqlite3_column_double(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sHP = (float)sqlite3_column_double(statement, i2);
 							break;
 
 						case 8:
-							pWShipResults.at(pWShipResults.size()-1).sMSP = (float)sqlite3_column_double(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sMSP = (float)sqlite3_column_double(statement, i2);
 							break;
 
 						case 9:
-							pWShipResults.at(pWShipResults.size()-1).sMAP = (float)sqlite3_column_double(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sMAP = (float)sqlite3_column_double(statement, i2);
 							break;
 
 						case 10:
-							pWShipResults.at(pWShipResults.size()-1).sMHP = (float)sqlite3_column_double(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sMHP = (float)sqlite3_column_double(statement, i2);
 							break;
 
 						case 11:
-							pWShipResults.at(pWShipResults.size()-1).sMInit = sqlite3_column_int(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sMInit = sqlite3_column_int(statement, i2);
 							break;
 
 						case 12:
-							pWShipResults.at(pWShipResults.size()-1).sLB = sqlite3_column_int(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sLB = sqlite3_column_int(statement, i2);
 							break;
 
 						case 13:
-							pWShipResults.at(pWShipResults.size()-1).sMT = sqlite3_column_int(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sMT = sqlite3_column_int(statement, i2);
 							break;
 
 						case 14:
-							pWShipResults.at(pWShipResults.size()-1).sBH = sqlite3_column_int(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sBH = sqlite3_column_int(statement, i2);
 							break;
 
 						case 15:
-							pWShipResults.at(pWShipResults.size()-1).sRM = sqlite3_column_int(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sRM = sqlite3_column_int(statement, i2);
 							break;
 
 						case 16:
-							pWShipResults.at(pWShipResults.size()-1).sHWB = sqlite3_column_int(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sHWB = sqlite3_column_int(statement, i2);
 							break;
 
 						case 17:
-							pWShipResults.at(pWShipResults.size()-1).sWHP = sqlite3_column_int(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sWHP = sqlite3_column_int(statement, i2);
 							break;
 
 						case 18:
-							pWShipResults.at(pWShipResults.size()-1).sULB = sqlite3_column_int(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sULB = sqlite3_column_int(statement, i2);
 							break;
 
 						case 19:
-							pWShipResults.at(pWShipResults.size()-1).sUMT = sqlite3_column_int(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sUMT = sqlite3_column_int(statement, i2);
 							break;
 
 						case 20:
-							pWShipResults.at(pWShipResults.size()-1).sUBH = sqlite3_column_int(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sUBH = sqlite3_column_int(statement, i2);
 							break;
 
 						case 21:
-							pWShipResults.at(pWShipResults.size()-1).sURM = sqlite3_column_int(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sURM = sqlite3_column_int(statement, i2);
 							break;
 
 						case 22:
-							pWShipResults.at(pWShipResults.size()-1).sUHWB = sqlite3_column_int(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sUHWB = sqlite3_column_int(statement, i2);
 							break;
 
 						case 23:
-							pWShipResults.at(pWShipResults.size()-1).sMWSpreads = sqlite3_column_int(statement,i2);
+							pWShipResults.at(pWShipResults.size() - 1).sMWSpreads = sqlite3_column_int(statement, i2);
 
 						default:
 							createBInfo();
@@ -4069,37 +3337,32 @@ void Database::getPWSDResults(bool* bErrors)
 					}
 				}
 
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnPWSDResults(vector<pWShip>& pWShips)
-{
-	for (i = 0; i < pWShipResults.size(); i++)
-	{
+void Database::returnPWSDResults(vector<pWShip>& pWShips) {
+	for (i = 0; i < pWShipResults.size(); i++) {
 		pWShips.push_back(pWShip());
 
 		pWShips.at(i).pWID = pWShipResults.at(i).pWID;
@@ -4131,57 +3394,48 @@ void Database::returnPWSDResults(vector<pWShip>& pWShips)
 }
 
 //Player Wingmen Ship Spread/Weapon Vector
-void Database::getPWSSResults(bool* bErrors)
-{
+void Database::getPWSSResults(bool* bErrors) {
 	rows = getCount("PWShip_WSpreads", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows; i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement); //Call this each time to call up a new row
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					wspreadResults.push_back(pWSSpread());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 
 						case 0:
-							wspreadResults.at(wspreadResults.size()-1).sID = sqlite3_column_int(statement,i2); //Vector.size()-1 so that we can have multiple vector rows without having to deal with each row with if/elses
+							wspreadResults.at(wspreadResults.size() - 1).sID = sqlite3_column_int(statement, i2); //Vector.size()-1 so that we can have multiple vector rows without having to deal with each row with if/elses
 							break;
 
 						case 1:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								wspreadResults.at(wspreadResults.size()-1).sWType  = data;
+							if (data != NULL) {
+								wspreadResults.at(wspreadResults.size() - 1).sWType = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 2:
-							wspreadResults.at(wspreadResults.size()-1).wID = sqlite3_column_int(statement,i2);
+							wspreadResults.at(wspreadResults.size() - 1).wID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 3:
-							wspreadResults.at(wspreadResults.size()-1).sPID = sqlite3_column_int(statement,i2);
+							wspreadResults.at(wspreadResults.size() - 1).sPID = sqlite3_column_int(statement, i2);
 							break;
 
 						default:
@@ -4192,38 +3446,33 @@ void Database::getPWSSResults(bool* bErrors)
 					}
 				}
 
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
 
-void Database::returnPWSSResults(vector<pWSSpread>& wspreads)
-{
-	for (i = 0; i < wspreadResults.size(); i++)
-	{
+void Database::returnPWSSResults(vector<pWSSpread>& wspreads) {
+	for (i = 0; i < wspreadResults.size(); i++) {
 		wspreads.push_back(pWSSpread());
 
 		wspreads.at(i).sID = wspreadResults.at(i).sID;
@@ -4236,56 +3485,47 @@ void Database::returnPWSSResults(vector<pWSSpread>& wspreads)
 }
 
 //Player Wingmen Ship HP Vectors
-void Database::getPWSHPVResults(bool* bErrors)
-{
+void Database::getPWSHPVResults(bool* bErrors) {
 	rows = getCount("PWShip_WHPVect", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows; i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					whpvectorResults.push_back(pWSHPVect());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 						case 0:
-							whpvectorResults.at(whpvectorResults.size()-1).sID = sqlite3_column_int(statement,i2);
+							whpvectorResults.at(whpvectorResults.size() - 1).sID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 1:
-							whpvectorResults.at(whpvectorResults.size()-1).wep_ID = sqlite3_column_int(statement,i2);
+							whpvectorResults.at(whpvectorResults.size() - 1).wep_ID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 2:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								whpvectorResults.at(whpvectorResults.size()-1).sWType = data;
+							if (data != NULL) {
+								whpvectorResults.at(whpvectorResults.size() - 1).sWType = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 3:
-							whpvectorResults.at(whpvectorResults.size()-1).wID = sqlite3_column_int(statement,i2);
+							whpvectorResults.at(whpvectorResults.size() - 1).wID = sqlite3_column_int(statement, i2);
 							break;
 
 						default:
@@ -4296,37 +3536,32 @@ void Database::getPWSHPVResults(bool* bErrors)
 					}
 				}
 
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnPWSHPVResults(vector<pWSHPVect>& whpvectors)
-{
-	for (i = 0; i < whpvectorResults.size(); i++)
-	{
+void Database::returnPWSHPVResults(vector<pWSHPVect>& whpvectors) {
+	for (i = 0; i < whpvectorResults.size(); i++) {
 		whpvectors.push_back(pWSHPVect());
 
 		whpvectors.at(i).sID = whpvectorResults.at(i).sID; //HPSlot value in the weapon vector indicated by the below variable
@@ -4339,284 +3574,249 @@ void Database::returnPWSHPVResults(vector<pWSHPVect>& whpvectors)
 }
 
 //Mission Data
-void Database::getPMDataResults(bool* bErrors)
-{
+void Database::getPMDataResults(bool* bErrors) {
 	rows = getCount("Mission_Data", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows;  i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					pMDataResults.push_back(missionData());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 						case 0:
-							pMDataResults.at(pMDataResults.size()-1).mID = sqlite3_column_int(statement, i2);
+							pMDataResults.at(pMDataResults.size() - 1).mID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 1:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pMDataResults.at(pMDataResults.size()-1).mName = data;
+							if (data != NULL) {
+								pMDataResults.at(pMDataResults.size() - 1).mName = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 2:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pMDataResults.at(pMDataResults.size()-1).mDesc = data;
+							if (data != NULL) {
+								pMDataResults.at(pMDataResults.size() - 1).mDesc = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 3:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pMDataResults.at(pMDataResults.size()-1).mType = data;
+							if (data != NULL) {
+								pMDataResults.at(pMDataResults.size() - 1).mType = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 4:
-							pMDataResults.at(pMDataResults.size()-1).mCBEReq = sqlite3_column_int(statement, i2);
+							pMDataResults.at(pMDataResults.size() - 1).mCBEReq = sqlite3_column_int(statement, i2);
 							break;
 
 						case 5:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pMDataResults.at(pMDataResults.size()-1).mSCReq = data;
+							if (data != NULL) {
+								pMDataResults.at(pMDataResults.size() - 1).mSCReq = data;
 								*bErrors = false;
-							}
-
-							else
-							{
-								*bErrors = true;
-								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
 							}
 
 							break;
 
 						case 6:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pMDataResults.at(pMDataResults.size()-1).mMWReq = data;
+							if (data != NULL) {
+								pMDataResults.at(pMDataResults.size() - 1).mMWReq = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 7:
-							pMDataResults.at(pMDataResults.size()-1).mDur = sqlite3_column_int(statement, i2);
+							pMDataResults.at(pMDataResults.size() - 1).mDur = sqlite3_column_int(statement, i2);
 							break;
 
 						case 8:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pMDataResults.at(pMDataResults.size()-1).mDifficulty = data;
+							if (data != NULL) {
+								pMDataResults.at(pMDataResults.size() - 1).mDifficulty = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 9:
-							data = (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pMDataResults.at(pMDataResults.size()-1).mLSector = data;
+							if (data != NULL) {
+								pMDataResults.at(pMDataResults.size() - 1).mLSector = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 10:
-							data = (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pMDataResults.at(pMDataResults.size()-1).mLSystem = data;
+							if (data != NULL) {
+								pMDataResults.at(pMDataResults.size() - 1).mLSystem = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 11:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pMDataResults.at(pMDataResults.size()-1).mTName = data;
+							if (data != NULL) {
+								pMDataResults.at(pMDataResults.size() - 1).mTName = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 12:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pMDataResults.at(pMDataResults.size()-1).mTSClass = data;
+							if (data != NULL) {
+								pMDataResults.at(pMDataResults.size() - 1).mTSClass = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 13:
-							pMDataResults.at(pMDataResults.size()-1).mBounty = sqlite3_column_int(statement, i2);
+							pMDataResults.at(pMDataResults.size() - 1).mBounty = sqlite3_column_int(statement, i2);
 							break;
 
 						case 14:
-							pMDataResults.at(pMDataResults.size()-1).mXR = sqlite3_column_int(statement, i2);
+							pMDataResults.at(pMDataResults.size() - 1).mXR = sqlite3_column_int(statement, i2);
 							break;
 
 						case 15:
-							pMDataResults.at(pMDataResults.size()-1).mRR = sqlite3_column_int(statement, i2);
+							pMDataResults.at(pMDataResults.size() - 1).mRR = sqlite3_column_int(statement, i2);
 							break;
 
 						case 16:
-							pMDataResults.at(pMDataResults.size()-1).mDiR = sqlite3_column_int(statement, i2);
+							pMDataResults.at(pMDataResults.size() - 1).mDiR = sqlite3_column_int(statement, i2);
 							break;
 
 						case 17:
-							pMDataResults.at(pMDataResults.size()-1).mDR = sqlite3_column_int(statement, i2);
+							pMDataResults.at(pMDataResults.size() - 1).mDR = sqlite3_column_int(statement, i2);
 							break;
 
 						case 18:
-							pMDataResults.at(pMDataResults.size()-1).mLR = sqlite3_column_int(statement, i2);
+							pMDataResults.at(pMDataResults.size() - 1).mLR = sqlite3_column_int(statement, i2);
 							break;
 
 						case 19:
-							pMDataResults.at(pMDataResults.size()-1).mPlR = sqlite3_column_int(statement, i2);
+							pMDataResults.at(pMDataResults.size() - 1).mPlR = sqlite3_column_int(statement, i2);
 							break;
 
 						case 20:
-							pMDataResults.at(pMDataResults.size()-1).mUR = sqlite3_column_int(statement, i2);
+							pMDataResults.at(pMDataResults.size() - 1).mUR = sqlite3_column_int(statement, i2);
 							break;
 
 						case 21:
-							pMDataResults.at(pMDataResults.size()-1).mPR = sqlite3_column_int(statement, i2);
+							pMDataResults.at(pMDataResults.size() - 1).mPR = sqlite3_column_int(statement, i2);
 							break;
 
 						case 22:
-							pMDataResults.at(pMDataResults.size()-1).mNWR = sqlite3_column_int(statement, i2);
+							pMDataResults.at(pMDataResults.size() - 1).mNWR = sqlite3_column_int(statement, i2);
 							break;
 
 						case 23:
-							pMDataResults.at(pMDataResults.size()-1).mEXPR = sqlite3_column_int(statement, i2);
+							pMDataResults.at(pMDataResults.size() - 1).mEXPR = sqlite3_column_int(statement, i2);
 							break;
 
 						case 24:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pMDataResults.at(pMDataResults.size()-1).mIR = data;
+							if (data != NULL) {
+								pMDataResults.at(pMDataResults.size() - 1).mIR = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 25:
-							pMDataResults.at(pMDataResults.size()-1).mState = sqlite3_column_int(statement, i2);
+							pMDataResults.at(pMDataResults.size() - 1).mState = sqlite3_column_int(statement, i2);
 							break;
 
 						default:
@@ -4627,37 +3827,32 @@ void Database::getPMDataResults(bool* bErrors)
 					}
 				}
 
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnPMDataResults(vector<missionData>& pMData)
-{
-	for (i = 0; i < pMDataResults.size(); i++)
-	{
+void Database::returnPMDataResults(vector<missionData>& pMData) {
+	for (i = 0; i < pMDataResults.size(); i++) {
 		pMData.push_back(missionData());
 
 		pMData.at(i).mID = pMDataResults.at(i).mID;
@@ -4692,48 +3887,39 @@ void Database::returnPMDataResults(vector<missionData>& pMData)
 }
 
 //Relationship Data
-void Database::getPRDataResults(bool* bErrors)
-{
+void Database::getPRDataResults(bool* bErrors) {
 	rows = getCount("Relationship_Data", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows;  i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					pRDataResults.push_back(relationData());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 						case 1:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pRDataResults.at(pRDataResults.size()-1).rName = data;
+							if (data != NULL) {
+								pRDataResults.at(pRDataResults.size() - 1).rName = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 2:
-							pRDataResults.at(pRDataResults.size()-1).rAffinity = sqlite3_column_int(statement,i2);
+							pRDataResults.at(pRDataResults.size() - 1).rAffinity = sqlite3_column_int(statement, i2);
 							break;
 
 						default:
@@ -4744,37 +3930,32 @@ void Database::getPRDataResults(bool* bErrors)
 					}
 				}
 
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnPRDataResults(vector<relationData>& pRData)
-{
-	for (i = 0; i < pRDataResults.size(); i++)
-	{
+void Database::returnPRDataResults(vector<relationData>& pRData) {
+	for (i = 0; i < pRDataResults.size(); i++) {
 		pRData.push_back(relationData());
 
 		pRData.at(i).rName = pRDataResults.at(i).rName;
@@ -4785,100 +3966,87 @@ void Database::returnPRDataResults(vector<relationData>& pRData)
 }
 
 //Station Data
-void Database::getSDataResults(bool* bErrors)
-{
+void Database::getSDataResults(bool* bErrors) {
 	rows = getCount("Generated_Stations", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows; i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					stDataResults.push_back(stationData());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 						case 0:
-							stDataResults.at(stDataResults.size()-1).sID = sqlite3_column_int(statement,i2);
+							stDataResults.at(stDataResults.size() - 1).sID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 1:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								stDataResults.at(stDataResults.size()-1).sName = data;
+							if (data != NULL) {
+								stDataResults.at(stDataResults.size() - 1).sName = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 2:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								stDataResults.at(stDataResults.size()-1).sAffiliation = data;
+							if (data != NULL) {
+								stDataResults.at(stDataResults.size() - 1).sAffiliation = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 3:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								stDataResults.at(stDataResults.size()-1).sDispo = data;
+							if (data != NULL) {
+								stDataResults.at(stDataResults.size() - 1).sDispo = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 4:
-							stDataResults.at(stDataResults.size()-1).sTLevel = sqlite3_column_int(statement,i2);
+							stDataResults.at(stDataResults.size() - 1).sTLevel = sqlite3_column_int(statement, i2);
 							break;
 
 						case 5:
-							stDataResults.at(stDataResults.size()-1).sLevel = sqlite3_column_int(statement,i2);
+							stDataResults.at(stDataResults.size() - 1).sLevel = sqlite3_column_int(statement, i2);
 							break;
 
 						case 6:
-							stDataResults.at(stDataResults.size()-1).sMSpace = (float)sqlite3_column_double(statement,i);
+							stDataResults.at(stDataResults.size() - 1).sMSpace = (float)sqlite3_column_double(statement, i);
 							break;
 
 						case 7:
-							stDataResults.at(stDataResults.size()-1).sCMulti = (float)sqlite3_column_double(statement,i);
+							stDataResults.at(stDataResults.size() - 1).sCMulti = (float)sqlite3_column_double(statement, i);
 							break;
 
 						default:
@@ -4889,37 +4057,32 @@ void Database::getSDataResults(bool* bErrors)
 					}
 				}
 
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnSDataResults(vector<stationData>& stData)
-{
-	for (i = 0; i < stDataResults.size(); i++)
-	{
+void Database::returnSDataResults(vector<stationData>& stData) {
+	for (i = 0; i < stDataResults.size(); i++) {
 		stData.push_back(stationData());
 
 		stData.at(i).sID = stDataResults.at(i).sID;
@@ -4936,60 +4099,51 @@ void Database::returnSDataResults(vector<stationData>& stData)
 }
 
 //Player Station Inv
-void Database::getSPIResults(bool* bErrors)
-{
+void Database::getSPIResults(bool* bErrors) {
 	rows = getCount("Player_Station_Inv", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows; i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					pSInventoryResults.push_back(sPInv());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 						case 1:
-							pSInventoryResults.at(pSInventoryResults.size()-1).sID = sqlite3_column_int(statement,i2);
+							pSInventoryResults.at(pSInventoryResults.size() - 1).sID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 2:
-							pSInventoryResults.at(pSInventoryResults.size()-1).iID = sqlite3_column_int(statement,i2);
+							pSInventoryResults.at(pSInventoryResults.size() - 1).iID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 3:
-							pSInventoryResults.at(pSInventoryResults.size()-1).NOI = sqlite3_column_int(statement,i2);
+							pSInventoryResults.at(pSInventoryResults.size() - 1).NOI = sqlite3_column_int(statement, i2);
 							break;
 
 						case 4:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pSInventoryResults.at(pSInventoryResults.size()-1).iType = data;
+							if (data != NULL) {
+								pSInventoryResults.at(pSInventoryResults.size() - 1).iType = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 5:
-							pSInventoryResults.at(pSInventoryResults.size()-1).iSG2 = (float)sqlite3_column_double(statement,i);
+							pSInventoryResults.at(pSInventoryResults.size() - 1).iSG2 = (float)sqlite3_column_double(statement, i);
 							break;
 
 						default:
@@ -5000,37 +4154,32 @@ void Database::getSPIResults(bool* bErrors)
 					}
 				}
 
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnSPIResults(vector<sPInv>& pSInventory)
-{
-	for (i = 0; i < pSInventoryResults.size(); i++)
-	{
+void Database::returnSPIResults(vector<sPInv>& pSInventory) {
+	for (i = 0; i < pSInventoryResults.size(); i++) {
 		pSInventory.push_back(sPInv());
 
 		pSInventory.at(i).sID = pSInventoryResults.at(i).sID;
@@ -5044,126 +4193,111 @@ void Database::returnSPIResults(vector<sPInv>& pSInventory)
 }
 
 //Planet Data
-void Database::getPDResults(bool* bErrors)
-{
+void Database::getPDResults(bool* bErrors) {
 	rows = getCount("Generated_Planets", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows; i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					plDataResults.push_back(planetData());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 						case 0:
-							plDataResults.at(plDataResults.size()-1).pID = sqlite3_column_int(statement,i2);
+							plDataResults.at(plDataResults.size() - 1).pID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 1:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								plDataResults.at(plDataResults.size()-1).pName = data;
+							if (data != NULL) {
+								plDataResults.at(plDataResults.size() - 1).pName = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 2:
-							data = (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								plDataResults.at(plDataResults.size()-1).pAffiliation = data;
+							if (data != NULL) {
+								plDataResults.at(plDataResults.size() - 1).pAffiliation = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 3:
-							data =  (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								plDataResults.at(plDataResults.size()-1).pDispo = data;
+							if (data != NULL) {
+								plDataResults.at(plDataResults.size() - 1).pDispo = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 4:
-							data = (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								plDataResults.at(plDataResults.size()-1).pRace = data;
+							if (data != NULL) {
+								plDataResults.at(plDataResults.size() - 1).pRace = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 5:
-							plDataResults.at(plDataResults.size()-1).bIsPOwned = sqlite3_column_int(statement,i2);
+							plDataResults.at(plDataResults.size() - 1).bIsPOwned = sqlite3_column_int(statement, i2);
 							break;
 
 						case 6:
-							plDataResults.at(plDataResults.size()-1).bIsDestroyed = sqlite3_column_int(statement,i2);
+							plDataResults.at(plDataResults.size() - 1).bIsDestroyed = sqlite3_column_int(statement, i2);
 							break;
 
 						case 7:
-							plDataResults.at(plDataResults.size()-1).pEKS = (float)sqlite3_column_double(statement,i2);
+							plDataResults.at(plDataResults.size() - 1).pEKS = (float)sqlite3_column_double(statement, i2);
 							break;
 
 						case 8:
-							plDataResults.at(plDataResults.size()-1).pSize = (float)sqlite3_column_double(statement,i2);
+							plDataResults.at(plDataResults.size() - 1).pSize = (float)sqlite3_column_double(statement, i2);
 							break;
 
 						case 9:
-							plDataResults.at(plDataResults.size()-1).pCPop = sqlite3_column_int64(statement,i2);
+							plDataResults.at(plDataResults.size() - 1).pCPop = sqlite3_column_int64(statement, i2);
 							break;
 
 						case 10:
-							plDataResults.at(plDataResults.size()-1).pMPop = sqlite3_column_int64(statement,i2);
+							plDataResults.at(plDataResults.size() - 1).pMPop = sqlite3_column_int64(statement, i2);
 							break;
 
 						default:
@@ -5174,37 +4308,32 @@ void Database::getPDResults(bool* bErrors)
 					}
 				}
 
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnPDResults(vector<planetData>& plData)
-{
-	for (i = 0; i < plDataResults.size(); i++)
-	{
+void Database::returnPDResults(vector<planetData>& plData) {
+	for (i = 0; i < plDataResults.size(); i++) {
 		plData.push_back(planetData());
 
 		plData.at(i).pID = plDataResults.at(i).pID;
@@ -5224,9 +4353,8 @@ void Database::returnPDResults(vector<planetData>& plData)
 
 		foundAt = plData.at(i).pName.find(find);
 
-		if (foundAt != string::npos)
-		{
-			plData.at(i).pName.replace(foundAt,1,temp);
+		if (foundAt != string::npos) {
+			plData.at(i).pName.replace(foundAt, 1, temp);
 		}
 	}
 
@@ -5234,34 +4362,27 @@ void Database::returnPDResults(vector<planetData>& plData)
 }
 
 //Planetary Defenses
-void Database::getPDefResults(bool* bErrors)
-{
+void Database::getPDefResults(bool* bErrors) {
 	rows = getCount("Planetary_Defenses", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows; i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					pDefensesResults.push_back(pDefData());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 						case 1:
-							pDefensesResults.at(pDefensesResults.size()-1).pID = sqlite3_column_int(statement,i2);
+							pDefensesResults.at(pDefensesResults.size() - 1).pID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 2:
-							pDefensesResults.at(pDefensesResults.size()-1).pDID = sqlite3_column_int(statement,i2);
+							pDefensesResults.at(pDefensesResults.size() - 1).pDID = sqlite3_column_int(statement, i2);
 							break;
 
 						default:
@@ -5272,37 +4393,32 @@ void Database::getPDefResults(bool* bErrors)
 					}
 				}
 
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnPDefResults(vector<pDefData>& pDefenses)
-{
-	for (i = 0; i < pDefensesResults.size(); i++)
-	{
+void Database::returnPDefResults(vector<pDefData>& pDefenses) {
+	for (i = 0; i < pDefensesResults.size(); i++) {
 		pDefenses.push_back(pDefData());
 
 		pDefenses.at(i).pID = pDefensesResults.at(i).pID;
@@ -5313,34 +4429,27 @@ void Database::returnPDefResults(vector<pDefData>& pDefenses)
 }
 
 //Planetary Shield
-void Database::getPSDResults(bool* bErrors)
-{
+void Database::getPSDResults(bool* bErrors) {
 	rows = getCount("Planetary_Shields", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows; i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					pShieldsResults.push_back(pSData());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 						case 1:
-							pShieldsResults.at(pShieldsResults.size()-1).pID = sqlite3_column_int(statement,i2);
+							pShieldsResults.at(pShieldsResults.size() - 1).pID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 2:
-							pShieldsResults.at(pShieldsResults.size()-1).mID = sqlite3_column_int(statement,i2);
+							pShieldsResults.at(pShieldsResults.size() - 1).mID = sqlite3_column_int(statement, i2);
 							break;
 
 						default:
@@ -5351,37 +4460,32 @@ void Database::getPSDResults(bool* bErrors)
 					}
 				}
 
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 
 			finalize(statement, bErrors);
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 }
 
-void Database::returnPSDResults(vector<pSData>& pShields)
-{
-	for (i = 0; i < pShieldsResults.size(); i++)
-	{
+void Database::returnPSDResults(vector<pSData>& pShields) {
+	for (i = 0; i < pShieldsResults.size(); i++) {
 		pShields.push_back(pSData());
 
 		pShields.at(i).pID = pShieldsResults.at(i).pID;
@@ -5392,60 +4496,51 @@ void Database::returnPSDResults(vector<pSData>& pShields)
 }
 
 //Planet A. Belts
-void Database::getPABResults(bool* bErrors)
-{
+void Database::getPABResults(bool* bErrors) {
 	rows = getCount("GP_Belts", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows; i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					pABResults.push_back(pABelts());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 						case 1:
-							pABResults.at(pABResults.size()-1).bID = sqlite3_column_int(statement,i2);
+							pABResults.at(pABResults.size() - 1).bID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 2:
-							pABResults.at(pABResults.size()-1).pID = sqlite3_column_int(statement,i2);
+							pABResults.at(pABResults.size() - 1).pID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 3:
-							data = (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pABResults.at(pABResults.size()-1).bName = data;
+							if (data != NULL) {
+								pABResults.at(pABResults.size() - 1).bName = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 4:
-							pABResults.at(pABResults.size()-1).bSize = (float)sqlite3_column_double(statement,i2);
+							pABResults.at(pABResults.size() - 1).bSize = (float)sqlite3_column_double(statement, i2);
 							break;
 
 						case 5:
-							pABResults.at(pABResults.size()-1).bBIsFull = sqlite3_column_int(statement,i2);
+							pABResults.at(pABResults.size() - 1).bBIsFull = sqlite3_column_int(statement, i2);
 							break;
 
 						default:
@@ -5456,37 +4551,32 @@ void Database::getPABResults(bool* bErrors)
 					}
 				}
 
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 
 			finalize(statement, bErrors);
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 }
 
-void Database::returnPABResults(vector<pABelts>& belts)
-{
-	for (i = 0; i < pABResults.size(); i++)
-	{
+void Database::returnPABResults(vector<pABelts>& belts) {
+	for (i = 0; i < pABResults.size(); i++) {
 		belts.push_back(pABelts());
 
 		belts.at(i).bID = pABResults.at(i).bID;
@@ -5500,115 +4590,102 @@ void Database::returnPABResults(vector<pABelts>& belts)
 }
 
 //Planet AB Roids
-void Database::getPABRResults(bool* bErrors)
-{
+void Database::getPABRResults(bool* bErrors) {
 	rows = getCount("GPB_Roids", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows; i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					pABRResults.push_back(pABRoids());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 						case 0:
-							pABRResults.at(pABRResults.size()-1).aID = sqlite3_column_int(statement,i2);
+							pABRResults.at(pABRResults.size() - 1).aID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 1:
-							pABRResults.at(pABRResults.size()-1).bID = sqlite3_column_int(statement,i2);
+							pABRResults.at(pABRResults.size() - 1).bID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 2:
-							pABRResults.at(pABRResults.size()-1).pID = sqlite3_column_int(statement,i2);
+							pABRResults.at(pABRResults.size() - 1).pID = sqlite3_column_int(statement, i2);
 
 						case 3:
-							data = (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pABRResults.at(pABRResults.size()-1).aName = data;
+							if (data != NULL) {
+								pABRResults.at(pABRResults.size() - 1).aName = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 4:
-							data = (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pABRResults.at(pABRResults.size()-1).aDesc = data;
+							if (data != NULL) {
+								pABRResults.at(pABRResults.size() - 1).aDesc = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 5:
-							pABRResults.at(pABRResults.size()-1).aSize = (float)sqlite3_column_double(statement,i2);
+							pABRResults.at(pABRResults.size() - 1).aSize = (float)sqlite3_column_double(statement, i2);
 							break;
 
 						case 6:
-							data = (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								pABRResults.at(pABRResults.size()-1).aOName = data;
+							if (data != NULL) {
+								pABRResults.at(pABRResults.size() - 1).aOName = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 7:
-							pABRResults.at(pABRResults.size()-1).aOID = sqlite3_column_int(statement,i2);
+							pABRResults.at(pABRResults.size() - 1).aOID = sqlite3_column_int(statement, i2);
 							break;
 
 						case 8:
-							pABRResults.at(pABRResults.size()-1).aOAmount = (float)sqlite3_column_double(statement,i2);
+							pABRResults.at(pABRResults.size() - 1).aOAmount = (float)sqlite3_column_double(statement, i2);
 							break;
 
 						case 9:
-							pABRResults.at(pABRResults.size()-1).xPos = sqlite3_column_int(statement,i2);
+							pABRResults.at(pABRResults.size() - 1).xPos = sqlite3_column_int(statement, i2);
 							break;
 
 						case 10:
-							pABRResults.at(pABRResults.size()-1).yPos = sqlite3_column_int(statement,i2);
+							pABRResults.at(pABRResults.size() - 1).yPos = sqlite3_column_int(statement, i2);
 							break;
 
 						case 11:
-							pABRResults.at(pABRResults.size()-1).zPos = sqlite3_column_int(statement,i2);
+							pABRResults.at(pABRResults.size() - 1).zPos = sqlite3_column_int(statement, i2);
 							break;
 
 						default:
@@ -5619,37 +4696,32 @@ void Database::getPABRResults(bool* bErrors)
 					}
 				}
 
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 
 			finalize(statement, bErrors);
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 }
 
-void Database::returnPABRResults(vector<pABRoids>& roids)
-{
-	for (i = 0; i < pABRResults.size(); i++)
-	{
+void Database::returnPABRResults(vector<pABRoids>& roids) {
+	for (i = 0; i < pABRResults.size(); i++) {
 		roids.push_back(pABRoids());
 
 		roids.at(i).aID = pABRResults.at(i).aID;
@@ -5670,48 +4742,39 @@ void Database::returnPABRResults(vector<pABRoids>& roids)
 }
 
 //Save Flags
-void Database::getSFlagResults(bool* bErrors)
-{
+void Database::getSFlagResults(bool* bErrors) {
 	rows = getCount("Save_Flags", bErrors);
 
-	if (rows > 0)
-	{
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < rows; i++)
-			{
+	if (rows > 0) {
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < rows; i++) {
 				sqlite3_step(statement);
 
 				cols = sqlite3_column_count(statement);
 
-				if (cols != 0)
-				{
+				if (cols != 0) {
 					sFlags.push_back(saveFlag());
 
-					for (i2 = 0; i2 <= cols; i2++)
-					{
-						switch(i2)
-						{
+					for (i2 = 0; i2 <= cols; i2++) {
+						switch (i2) {
 						case 1:
-							data = (char*)sqlite3_column_text(statement,i2);
+							data = (char*)sqlite3_column_text(statement, i2);
 
-							if (data != NULL)
-							{
-								sFlags.at(sFlags.size()-1).sfName = data;
+							if (data != NULL) {
+								sFlags.at(sFlags.size() - 1).sfName = data;
 								*bErrors = false;
 							}
 
-							else
-							{
+							else {
 								*bErrors = true;
 								createBInfo();
-								dbug.createBReport("SQL Code 6","Data returned equals NULL",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+								dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 							}
 
 							break;
 
 						case 2:
-							sFlags.at(sFlags.size()-1).sfValue = sqlite3_column_int(statement,i2);
+							sFlags.at(sFlags.size() - 1).sfValue = sqlite3_column_int(statement, i2);
 							break;
 
 						default:
@@ -5722,37 +4785,32 @@ void Database::getSFlagResults(bool* bErrors)
 					}
 				}
 
-				else
-				{
+				else {
 					*bErrors = true;
 					createBInfo();
-					dbug.createBReport("SQL Code 7","No column queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+					dbug.createBReport("SQL Code 7", "No column queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 				}
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 8","No row queried",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 8", "No row queried", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
 }
 
-void Database::returnSFlagResults(vector<saveFlag>& saveFlags)
-{
-	for (i = 0; i < sFlags.size(); i++)
-	{
+void Database::returnSFlagResults(vector<saveFlag>& saveFlags) {
+	for (i = 0; i < sFlags.size(); i++) {
 		saveFlags.push_back(saveFlag());
 
 		saveFlags.at(i).sfName = sFlags.at(i).sfName;
@@ -5763,26 +4821,24 @@ void Database::returnSFlagResults(vector<saveFlag>& saveFlags)
 }
 
 //Save Data
-void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSpread> plSSpreads, vector<pSHPVect> plSHPVectors, vector<pSInv> plSCargo, vector<pWingmenData> pWMData, vector<pWShip> pWMSData, vector<pWSSpread> pWMSSpreads, vector<pWSHPVect> pWMSHPVectors, vector<stationData> stData, vector<sPInv> sPInventory, vector<planetData> plData, vector<pDefData> plDData, vector<pSData> plSData, vector<pABelts> belts, vector<pABRoids> roids, vector<missionData> pMData, vector<relationData> pRData, bool* bErrors)
-{
+void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSpread> plSSpreads, vector<pSHPVect> plSHPVectors, vector<pSInv> plSCargo, vector<pWingmenData> pWMData, vector<pWShip> pWMSData, vector<pWSSpread> pWMSSpreads, vector<pWSHPVect> pWMSHPVectors, vector<stationData> stData, vector<sPInv> sPInventory, vector<planetData> plData, vector<pDefData> plDData, vector<pSData> plSData, vector<pABelts> belts, vector<pABRoids> roids, vector<missionData> pMData, vector<relationData> pRData, bool* bErrors) {
 	//Set bErrors to false so that we do not trip the message in dataSystem by accident
 	*bErrors = false;
 
 	//Part of debugging to try and fix database locked error
 	openSave(bErrors); //Open saveDB here for now; part of debugging
 
-	//Player Data
+					   //Player Data
 
 	cout << "Saving player data";
 	//Delete previous save data
 	dData("Player_Data", bErrors);
 
-	sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL,NULL, &error);
+	sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 	sqlStr = "Insert Into Player_Data (ID, Name, Rank, CEXPLvl, Planets_Destroyed, FKills, DKills, CKills, BCKills, BKills, CSKills, MKills, TKills, CEXP, CEXPTNL, Xarn, Rubies, Diamonds, Draconic, Lithium, Platinum, Uranium, Plutonium, Nuclear_Waste, Affiliated) Values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
 
-	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-	{
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 		//Save new data
 		sqlS1 = pData.at(0).pName;
 		sqlS2 = pData.at(0).pRank;
@@ -5810,46 +4866,45 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		sqlS3 = pData.at(0).pAffiliation;
 
 		//Bind parameters
-		sqlite3_bind_int(statement,1,1);
-		sqlite3_bind_text(statement,2,sqlS1.c_str(),sqlS1.size(),SQLITE_TRANSIENT);
-		sqlite3_bind_text(statement,3,sqlS2.c_str(),sqlS2.size(),SQLITE_TRANSIENT);
-		sqlite3_bind_int(statement,4,sqlI1);
-		sqlite3_bind_int(statement,5,sqlI2);
-		sqlite3_bind_int(statement,6,sqlI3);
-		sqlite3_bind_int(statement,7,sqlI4);
-		sqlite3_bind_int(statement,8,sqlI5);
-		sqlite3_bind_int(statement,9,sqlI6);
-		sqlite3_bind_int(statement,10,sqlI7);
-		sqlite3_bind_int(statement,11,sqlI8);
-		sqlite3_bind_int(statement,12,sqlI9);
-		sqlite3_bind_int(statement,13,sqlI10);
-		sqlite3_bind_int(statement,14,sqlI11);
-		sqlite3_bind_int(statement,15,sqlI12);
-		sqlite3_bind_int(statement,16,sqlI13);
-		sqlite3_bind_int(statement,17,sqlI14);
-		sqlite3_bind_int(statement,18,sqlI15);
-		sqlite3_bind_int(statement,19,sqlI16);
-		sqlite3_bind_int(statement,20,sqlI17);
-		sqlite3_bind_int(statement,21,sqlI18);
-		sqlite3_bind_int(statement,22,sqlI19);
-		sqlite3_bind_int(statement,23,sqlI20);
-		sqlite3_bind_int(statement,24,sqlI21);
-		sqlite3_bind_text(statement,25,sqlS3.c_str(),sqlS3.size(),SQLITE_TRANSIENT);
+		sqlite3_bind_int(statement, 1, 1);
+		sqlite3_bind_text(statement, 2, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
+		sqlite3_bind_text(statement, 3, sqlS2.c_str(), sqlS2.size(), SQLITE_TRANSIENT);
+		sqlite3_bind_int(statement, 4, sqlI1);
+		sqlite3_bind_int(statement, 5, sqlI2);
+		sqlite3_bind_int(statement, 6, sqlI3);
+		sqlite3_bind_int(statement, 7, sqlI4);
+		sqlite3_bind_int(statement, 8, sqlI5);
+		sqlite3_bind_int(statement, 9, sqlI6);
+		sqlite3_bind_int(statement, 10, sqlI7);
+		sqlite3_bind_int(statement, 11, sqlI8);
+		sqlite3_bind_int(statement, 12, sqlI9);
+		sqlite3_bind_int(statement, 13, sqlI10);
+		sqlite3_bind_int(statement, 14, sqlI11);
+		sqlite3_bind_int(statement, 15, sqlI12);
+		sqlite3_bind_int(statement, 16, sqlI13);
+		sqlite3_bind_int(statement, 17, sqlI14);
+		sqlite3_bind_int(statement, 18, sqlI15);
+		sqlite3_bind_int(statement, 19, sqlI16);
+		sqlite3_bind_int(statement, 20, sqlI17);
+		sqlite3_bind_int(statement, 21, sqlI18);
+		sqlite3_bind_int(statement, 22, sqlI19);
+		sqlite3_bind_int(statement, 23, sqlI20);
+		sqlite3_bind_int(statement, 24, sqlI21);
+		sqlite3_bind_text(statement, 25, sqlS3.c_str(), sqlS3.size(), SQLITE_TRANSIENT);
 
 		sqlite3_step(statement);
 
 		cout << ".";
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	sqlite3_finalize(statement);
-	sqlite3_exec(dBase,"END TRANSACTION",NULL,NULL,&error);
+	sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 
 	cout << " Done" << endl << endl;
 
@@ -5860,13 +4915,11 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	//Delete previous save data
 	dData("PShip_Data", bErrors);
 
-	sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL,NULL,&error);
+	sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 	sqlStr = "Insert Into PShip_Data (ID, Name, Class, TLevel, SPoints, APoints, HPoints, MSPoints, MAPoints, MHPoints, MInit, SG2, MCSpace, LB, MT, BH, RM, HWB, WHP, ULB, UMT, UBH, URM, UHWB, Max_Weapon_Spreads, SID, SSID, STID, Location) Values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
 
-	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-	{
-		for (i = 0; i < plShip.size(); i++)
-		{
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+		for (i = 0; i < plShip.size(); i++) {
 			//Save new data
 			sqlS1 = plShip.at(i).sName;
 			sqlS2 = plShip.at(i).sClass;
@@ -5897,35 +4950,35 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			sqlI17 = plShip.at(i).sSTID;
 			sqlS3 = plShip.at(i).sLocal;
 
-			sqlite3_bind_int(statement,1,i+1);
-			sqlite3_bind_text(statement,2,sqlS1.c_str(), sqlS1.size(),SQLITE_TRANSIENT);
-			sqlite3_bind_text(statement,3,sqlS2.c_str(), sqlS2.size(),SQLITE_TRANSIENT);
-			sqlite3_bind_int(statement,4,sqlI1);
-			sqlite3_bind_double(statement,5,sqlF1);
-			sqlite3_bind_double(statement,6,sqlF2);
-			sqlite3_bind_double(statement,7,sqlF3);
-			sqlite3_bind_double(statement,8,sqlF4);
-			sqlite3_bind_double(statement,9,sqlF5);
-			sqlite3_bind_double(statement,10,sqlF6);
-			sqlite3_bind_int(statement,11,sqlI2);
-			sqlite3_bind_double(statement,12,sqlF7);
-			sqlite3_bind_double(statement,13,sqlF8);
-			sqlite3_bind_int(statement,14,sqlI3);
-			sqlite3_bind_int(statement,15,sqlI4);
-			sqlite3_bind_int(statement,16,sqlI5);
-			sqlite3_bind_int(statement,17,sqlI6);
-			sqlite3_bind_int(statement,18,sqlI7);
-			sqlite3_bind_int(statement,19,sqlI8);
-			sqlite3_bind_int(statement,20,sqlI9);
-			sqlite3_bind_int(statement,21,sqlI10);
-			sqlite3_bind_int(statement,22,sqlI11);
-			sqlite3_bind_int(statement,23,sqlI12);
-			sqlite3_bind_int(statement,24,sqlI13);
-			sqlite3_bind_int(statement,25,sqlI14);
-			sqlite3_bind_int(statement,26,sqlI15);
-			sqlite3_bind_int(statement,27,sqlI16);
-			sqlite3_bind_int(statement,28,sqlI17);
-			sqlite3_bind_text(statement,29,sqlS3.c_str(), sqlS3.size(),SQLITE_TRANSIENT);
+			sqlite3_bind_int(statement, 1, i + 1);
+			sqlite3_bind_text(statement, 2, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
+			sqlite3_bind_text(statement, 3, sqlS2.c_str(), sqlS2.size(), SQLITE_TRANSIENT);
+			sqlite3_bind_int(statement, 4, sqlI1);
+			sqlite3_bind_double(statement, 5, sqlF1);
+			sqlite3_bind_double(statement, 6, sqlF2);
+			sqlite3_bind_double(statement, 7, sqlF3);
+			sqlite3_bind_double(statement, 8, sqlF4);
+			sqlite3_bind_double(statement, 9, sqlF5);
+			sqlite3_bind_double(statement, 10, sqlF6);
+			sqlite3_bind_int(statement, 11, sqlI2);
+			sqlite3_bind_double(statement, 12, sqlF7);
+			sqlite3_bind_double(statement, 13, sqlF8);
+			sqlite3_bind_int(statement, 14, sqlI3);
+			sqlite3_bind_int(statement, 15, sqlI4);
+			sqlite3_bind_int(statement, 16, sqlI5);
+			sqlite3_bind_int(statement, 17, sqlI6);
+			sqlite3_bind_int(statement, 18, sqlI7);
+			sqlite3_bind_int(statement, 19, sqlI8);
+			sqlite3_bind_int(statement, 20, sqlI9);
+			sqlite3_bind_int(statement, 21, sqlI10);
+			sqlite3_bind_int(statement, 22, sqlI11);
+			sqlite3_bind_int(statement, 23, sqlI12);
+			sqlite3_bind_int(statement, 24, sqlI13);
+			sqlite3_bind_int(statement, 25, sqlI14);
+			sqlite3_bind_int(statement, 26, sqlI15);
+			sqlite3_bind_int(statement, 27, sqlI16);
+			sqlite3_bind_int(statement, 28, sqlI17);
+			sqlite3_bind_text(statement, 29, sqlS3.c_str(), sqlS3.size(), SQLITE_TRANSIENT);
 		}
 
 		sqlite3_step(statement);
@@ -5934,15 +4987,14 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		cout << ".";
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
-	sqlite3_exec(dBase,"END TRANSACTION",NULL,NULL,&error);
+	sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 	cout << "Done" << endl << endl;
 
 	//Ship Spreads
@@ -5950,26 +5002,23 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	//Delete previous save data
 	dData("PShip_WSpreads", bErrors);
 
-	if (plSSpreads.size() > 0)
-	{
+	if (plSSpreads.size() > 0) {
 		cout << "Saving ship weapon spread data";
 
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sqlStr = "Insert Into PShip_WSpreads (ID, HPWeapType, Spread_ID) Values (?,?,?);";
 
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 			//Save new data
-			for (i = 0; i < plSSpreads.size(); i++)
-			{
+			for (i = 0; i < plSSpreads.size(); i++) {
 				sqlI1 = plSSpreads.at(i).sID;
 				sqlS1 = plSSpreads.at(i).sWType;
 				sqlI2 = plSSpreads.at(i).sPID;
 
-				sqlite3_bind_int(statement,1,sqlI1);
-				sqlite3_bind_text(statement,2,sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
-				sqlite3_bind_int(statement,3,sqlI3);
+				sqlite3_bind_int(statement, 1, sqlI1);
+				sqlite3_bind_text(statement, 2, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_int(statement, 3, sqlI3);
 
 				sqlite3_step(statement);
 				sqlite3_reset(statement);
@@ -5978,28 +5027,26 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
-		sqlite3_exec(dBase,"END TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PSWSpreads";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PSWSpreads";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 
 		cout << "Done" << endl << endl;
 	}
 
-	else
-	{
+	else {
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PSWSpreads";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 0;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PSWSpreads";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 0;
 	}
 
 
@@ -6008,26 +5055,23 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	//Delete previous save data
 	dData("PShip_WHPVect", bErrors);
 
-	if (plSHPVectors.size() > 0)
-	{
+	if (plSHPVectors.size() > 0) {
 		cout << "Saving ship weapon data";
 
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sqlStr = "Insert Into PShip_WHPVect (ID, Weap_ID, Weap_Type) Values (?,?,?);";
 
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 			//Save new data
-			for (i = 0; i < plSHPVectors.size(); i++)
-			{
+			for (i = 0; i < plSHPVectors.size(); i++) {
 				sqlI2 = plSHPVectors.at(i).sID;
 				sqlI3 = plSHPVectors.at(i).wID;
 				sqlS1 = plSHPVectors.at(i).sWType;
 
-				sqlite3_bind_int(statement,1,sqlI2);
-				sqlite3_bind_int(statement,2,sqlI3);
-				sqlite3_bind_text(statement,3,sqlS1.c_str(),sqlS1.size(),SQLITE_TRANSIENT);
+				sqlite3_bind_int(statement, 1, sqlI2);
+				sqlite3_bind_int(statement, 2, sqlI3);
+				sqlite3_bind_text(statement, 3, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
 
 				sqlite3_step(statement);
 				sqlite3_reset(statement);
@@ -6036,28 +5080,26 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PSWHPVect";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PSWHPVect";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 
 		cout << "Done" << endl << endl;
 	}
 
-	else
-	{
+	else {
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PSWHPVect";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 0;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PSWHPVect";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 0;
 	}
 
 
@@ -6066,19 +5108,16 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	//Delete previous save data
 	dData("PShip_Inv", bErrors);
 
-	if (plSCargo.size() > 0)
-	{
+	if (plSCargo.size() > 0) {
 		cout << "Saving ship cargo data";
 
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sqlStr = "Insert Into PShip_Inv (TID, SID, IID, IType, IAmount, ISG2) Values (?,?,?,?,?,?);";
 
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 			//Save new data
-			for (i = 0; i < plSCargo.size(); i++)
-			{
+			for (i = 0; i < plSCargo.size(); i++) {
 				sqlI1 = i; //Table ID
 				sqlI2 = plSCargo.at(i).sID; //Ship ID
 				sqlI3 = plSCargo.at(i).iID; //Item ID
@@ -6086,12 +5125,12 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 				sqlI4 = plSCargo.at(i).iAmount; //Item Amount
 				sqlF1 = plSCargo.at(i).iSG2; //Item SG2
 
-				sqlite3_bind_int(statement,1,sqlI1);
-				sqlite3_bind_int(statement,2,sqlI2);
-				sqlite3_bind_int(statement,3,sqlI3);
-				sqlite3_bind_text(statement,4,sqlS1.c_str(),sqlS3.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_int(statement,5,sqlI4);
-				sqlite3_bind_double(statement,6,sqlF1);
+				sqlite3_bind_int(statement, 1, sqlI1);
+				sqlite3_bind_int(statement, 2, sqlI2);
+				sqlite3_bind_int(statement, 3, sqlI3);
+				sqlite3_bind_text(statement, 4, sqlS1.c_str(), sqlS3.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_int(statement, 5, sqlI4);
+				sqlite3_bind_double(statement, 6, sqlF1);
 
 				sqlite3_step(statement);
 				sqlite3_reset(statement);
@@ -6100,28 +5139,26 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PSInv";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PSInv";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 
 		cout << "Done" << endl << endl;
 	}
 
-	else
-	{
+	else {
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PSInv";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 0;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PSInv";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 0;
 	}
 
 	//Player Wingmen Data
@@ -6129,27 +5166,24 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	//Delete previous save data
 	dData("Player_W_Data", bErrors);
 
-	if (pWMData.size() > 0)
-	{
+	if (pWMData.size() > 0) {
 		cout << "Saving player wingmen data";
 
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sqlStr = "Insert Into Player_W_Data (ID, Name, Rank, CEXPLvl) Values (?,?,?,?);";
 
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 			//Save new data
-			for (i = 0; i < pWMData.size(); i++)
-			{
+			for (i = 0; i < pWMData.size(); i++) {
 				sqlS1 = pWMData.at(i).pWName;
 				sqlS2 = pWMData.at(i).pWRank;
 				sqlI1 = pWMData.at(i).pWCXPLevel;
 
-				sqlite3_bind_int(statement,1,i);
-				sqlite3_bind_text(statement,2,sqlS1.c_str(),sqlS1.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_text(statement,3,sqlS2.c_str(),sqlS1.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_int(statement,4,sqlI1);
+				sqlite3_bind_int(statement, 1, i);
+				sqlite3_bind_text(statement, 2, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_text(statement, 3, sqlS2.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_int(statement, 4, sqlI1);
 
 				sqlite3_step(statement);
 				sqlite3_reset(statement);
@@ -6158,27 +5192,25 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PWData";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PWData";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 		cout << "Done" << endl << endl;
 	}
 
-	else
-	{
+	else {
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PWData";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 0;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PWData";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 0;
 	}
 
 
@@ -6187,16 +5219,14 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	//Delete previous save data
 	dData("PWShip_Data", bErrors);
 
-	if (pWMSData.size() > 0)
-	{
+	if (pWMSData.size() > 0) {
 		cout << "Saving player wingmen ship data";
 
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sqlStr = "Insert Into PWShip_Data (TID, WID, Name, Class, TLevel, SPoints, APoints, HPoints, MSPoints, MAPoints, MHPoints, MInit, LB, MT, BH, RM, HWB, WHP, ULB, UMT, UBH, URM, UHWB, Max_Weapon_Spreads) Values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
 
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 			//Save new data
 			sqlI14 = pWMSData.at(i).pWID;
 			sqlS1 = pWMSData.at(i).sName;
@@ -6222,29 +5252,29 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			sqlI13 = pWMSData.at(i).sUHWB;
 			sqlI15 = pWMSData.at(i).sMWSpreads;
 
-			sqlite3_bind_int(statement,1,sqlI14);
-			sqlite3_bind_text(statement,2,sqlS1.c_str(), sqlS1.size(),SQLITE_TRANSIENT);
-			sqlite3_bind_text(statement,3,sqlS2.c_str(), sqlS2.size(),SQLITE_TRANSIENT);
-			sqlite3_bind_int(statement,4,sqlI1);
-			sqlite3_bind_double(statement,5,sqlF1);
-			sqlite3_bind_double(statement,6,sqlF2);
-			sqlite3_bind_double(statement,7,sqlF3);
-			sqlite3_bind_double(statement,8,sqlF4);
-			sqlite3_bind_double(statement,9,sqlF5);
-			sqlite3_bind_double(statement,10,sqlF6);
-			sqlite3_bind_int(statement,11,sqlI2);
-			sqlite3_bind_int(statement,12,sqlI3);
-			sqlite3_bind_int(statement,13,sqlI4);
-			sqlite3_bind_int(statement,14,sqlI5);
-			sqlite3_bind_int(statement,15,sqlI6);
-			sqlite3_bind_int(statement,16,sqlI7);
-			sqlite3_bind_int(statement,17,sqlI8);
-			sqlite3_bind_int(statement,18,sqlI9);
-			sqlite3_bind_int(statement,19,sqlI10);
-			sqlite3_bind_int(statement,20,sqlI11);
-			sqlite3_bind_int(statement,21,sqlI12);
-			sqlite3_bind_int(statement,22,sqlI13);
-			sqlite3_bind_int(statement,23,sqlI14);
+			sqlite3_bind_int(statement, 1, sqlI14);
+			sqlite3_bind_text(statement, 2, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
+			sqlite3_bind_text(statement, 3, sqlS2.c_str(), sqlS2.size(), SQLITE_TRANSIENT);
+			sqlite3_bind_int(statement, 4, sqlI1);
+			sqlite3_bind_double(statement, 5, sqlF1);
+			sqlite3_bind_double(statement, 6, sqlF2);
+			sqlite3_bind_double(statement, 7, sqlF3);
+			sqlite3_bind_double(statement, 8, sqlF4);
+			sqlite3_bind_double(statement, 9, sqlF5);
+			sqlite3_bind_double(statement, 10, sqlF6);
+			sqlite3_bind_int(statement, 11, sqlI2);
+			sqlite3_bind_int(statement, 12, sqlI3);
+			sqlite3_bind_int(statement, 13, sqlI4);
+			sqlite3_bind_int(statement, 14, sqlI5);
+			sqlite3_bind_int(statement, 15, sqlI6);
+			sqlite3_bind_int(statement, 16, sqlI7);
+			sqlite3_bind_int(statement, 17, sqlI8);
+			sqlite3_bind_int(statement, 18, sqlI9);
+			sqlite3_bind_int(statement, 19, sqlI10);
+			sqlite3_bind_int(statement, 20, sqlI11);
+			sqlite3_bind_int(statement, 21, sqlI12);
+			sqlite3_bind_int(statement, 22, sqlI13);
+			sqlite3_bind_int(statement, 23, sqlI14);
 
 			sqlite3_step(statement);
 			sqlite3_reset(statement);
@@ -6252,27 +5282,25 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			cout << ".";
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
-		sqlite3_exec(dBase,"END TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PWSData";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PWSData";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 		cout << "Done" << endl << endl;
 	}
 
-	else
-	{
+	else {
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PWSData";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 0;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PWSData";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 0;
 	}
 
 
@@ -6281,28 +5309,25 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	//Delete previous save data
 	dData("PWShip_WSpreads", bErrors);
 
-	if (pWMSSpreads.size() > 0)
-	{
+	if (pWMSSpreads.size() > 0) {
 		cout << "Saving player wingmen ship weapon spread data";
 
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sqlStr = "Insert Into PWShip_WSpreads (ID, HPWeapType, WID, Spread_ID) Values (?,?,?,?);";
 
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 			//Save new data
-			for (i = 0; i < pWMSSpreads.size(); i++)
-			{
+			for (i = 0; i < pWMSSpreads.size(); i++) {
 				sqlI1 = pWMSSpreads.at(i).sID;
 				sqlS1 = pWMSSpreads.at(i).sWType;
 				sqlI2 = pWMSSpreads.at(i).wID;
 				sqlI3 = pWMSSpreads.at(i).sPID;
 
-				sqlite3_bind_int(statement,1,sqlI1);
-				sqlite3_bind_text(statement,2,sqlS1.c_str(),sqlS1.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_int(statement,3,sqlI2);
-				sqlite3_bind_int(statement,4,sqlI3);
+				sqlite3_bind_int(statement, 1, sqlI1);
+				sqlite3_bind_text(statement, 2, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_int(statement, 3, sqlI2);
+				sqlite3_bind_int(statement, 4, sqlI3);
 
 				sqlite3_step(statement);
 				sqlite3_reset(statement);
@@ -6311,28 +5336,26 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 
 
 		finalize(statement, bErrors);
-		sqlite3_exec(dBase,"END TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PWSWSpreads";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PWSWSpreads";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 		cout << "Done" << endl << endl;
 	}
 
-	else
-	{
+	else {
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PWSWSpreads";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 0;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PWSWSpreads";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 0;
 	}
 
 
@@ -6341,28 +5364,25 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	//Delete previous save data
 	dData("PWShip_WHPVect", bErrors);
 
-	if (pWMSHPVectors.size() > 0)
-	{
+	if (pWMSHPVectors.size() > 0) {
 		cout << "Saving player wingmen ship weapon data";
 
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sqlStr = "Insert Into PWShip_WHPVect (ID, Weap_ID, Weap_Type, WID) Values (?,?,?,?);";
 
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 			//Save new data
-			for (i = 0; i < pWMSHPVectors.size(); i++)
-			{
+			for (i = 0; i < pWMSHPVectors.size(); i++) {
 				sqlI1 = pWMSHPVectors.at(i).sID;
 				sqlI2 = pWMSHPVectors.at(i).wID;
 				sqlS1 = pWMSHPVectors.at(i).sWType;
 				sqlI3 = pWMSHPVectors.at(i).wID;
 
-				sqlite3_bind_int(statement,1,sqlI1);
-				sqlite3_bind_int(statement,2,sqlI2);
-				sqlite3_bind_text(statement,3,sqlS1.c_str(),sqlS1.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_int(statement,4,sqlI3);
+				sqlite3_bind_int(statement, 1, sqlI1);
+				sqlite3_bind_int(statement, 2, sqlI2);
+				sqlite3_bind_text(statement, 3, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_int(statement, 4, sqlI3);
 
 				sqlite3_step(statement);
 				sqlite3_reset(statement);
@@ -6371,27 +5391,25 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
-		sqlite3_exec(dBase,"END TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PWSWHPVect";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PWSWHPVect";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 		cout << "Done" << endl << endl;
 	}
 
-	else
-	{
+	else {
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PWSWHPVect";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 0;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PWSWHPVect";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 0;
 	}
 
 
@@ -6400,19 +5418,16 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	//Delete previous save data
 	dData("Mission_Data", bErrors);
 
-	if (pMData.size() > 0)
-	{
+	if (pMData.size() > 0) {
 		cout << "Saving player mission data";
 
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sqlStr = "Insert Into Mission_Data (ID, Name, Description, Type, CBE_Lvl_Req, Ship_Class_Req, Item_Req, Duration, Difficulty, Locale_Sector, Locale_System, Target_Name, Target_Ship_Class, Bounty, Xarn_Reward, Ruby_Reward, Diamond_Reward, Draconic_Reward, Lithium_Reward, Platinum_Reward, Uranium_Reward, Plutonium_Reward, Nuclear_Waste_Reward, CEXP_Reward, Item_Reward, Mission_State) Values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
 
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 			//Save new data
-			for (i = 0; i < pMData.size(); i++)
-			{
+			for (i = 0; i < pMData.size(); i++) {
 				sqlI1 = pMData.at(i).mID;
 				sqlS1 = pMData.at(i).mName;
 				sqlS2 = pMData.at(i).mDesc;
@@ -6440,32 +5455,32 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 				sqlS11 = pMData.at(i).mIR; //item reward;
 				sqlI15 = pMData.at(i).mState; //Mission State
 
-				sqlite3_bind_int(statement,1,sqlI1);
-				sqlite3_bind_text(statement,2,sqlS1.c_str(), sqlS1.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_text(statement,3,sqlS2.c_str(), sqlS2.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_text(statement,4,sqlS3.c_str(), sqlS3.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_int(statement,5,sqlI2);
-				sqlite3_bind_text(statement,6,sqlS4.c_str(), sqlS4.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_text(statement,7,sqlS5.c_str(), sqlS5.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_int(statement,8,sqlI3);
-				sqlite3_bind_text(statement,9,sqlS6.c_str(), sqlS6.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_text(statement,10,sqlS7.c_str(), sqlS7.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_text(statement,11,sqlS8.c_str(), sqlS8.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_text(statement,12,sqlS9.c_str(), sqlS9.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_text(statement,13,sqlS10.c_str(), sqlS10.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_int(statement,14,sqlI4);
-				sqlite3_bind_int(statement,15,sqlI5);
-				sqlite3_bind_int(statement,16,sqlI6);
-				sqlite3_bind_int(statement,17,sqlI7);
-				sqlite3_bind_int(statement,18,sqlI8);
-				sqlite3_bind_int(statement,19,sqlI9);
-				sqlite3_bind_int(statement,20,sqlI10);
-				sqlite3_bind_int(statement,21,sqlI11);
-				sqlite3_bind_int(statement,22,sqlI12);
-				sqlite3_bind_int(statement,23,sqlI13);
-				sqlite3_bind_int(statement,24,sqlI14);
-				sqlite3_bind_text(statement,25,sqlS11.c_str(), sqlS11.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_int(statement,26,sqlI15);
+				sqlite3_bind_int(statement, 1, sqlI1);
+				sqlite3_bind_text(statement, 2, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_text(statement, 3, sqlS2.c_str(), sqlS2.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_text(statement, 4, sqlS3.c_str(), sqlS3.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_int(statement, 5, sqlI2);
+				sqlite3_bind_text(statement, 6, sqlS4.c_str(), sqlS4.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_text(statement, 7, sqlS5.c_str(), sqlS5.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_int(statement, 8, sqlI3);
+				sqlite3_bind_text(statement, 9, sqlS6.c_str(), sqlS6.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_text(statement, 10, sqlS7.c_str(), sqlS7.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_text(statement, 11, sqlS8.c_str(), sqlS8.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_text(statement, 12, sqlS9.c_str(), sqlS9.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_text(statement, 13, sqlS10.c_str(), sqlS10.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_int(statement, 14, sqlI4);
+				sqlite3_bind_int(statement, 15, sqlI5);
+				sqlite3_bind_int(statement, 16, sqlI6);
+				sqlite3_bind_int(statement, 17, sqlI7);
+				sqlite3_bind_int(statement, 18, sqlI8);
+				sqlite3_bind_int(statement, 19, sqlI9);
+				sqlite3_bind_int(statement, 20, sqlI10);
+				sqlite3_bind_int(statement, 21, sqlI11);
+				sqlite3_bind_int(statement, 22, sqlI12);
+				sqlite3_bind_int(statement, 23, sqlI13);
+				sqlite3_bind_int(statement, 24, sqlI14);
+				sqlite3_bind_text(statement, 25, sqlS11.c_str(), sqlS11.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_int(statement, 26, sqlI15);
 
 				sqlite3_step(statement);
 				sqlite3_reset(statement);
@@ -6474,27 +5489,25 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
-		sqlite3_exec(dBase,"END TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PMData";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PMData";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 		cout << "Done" << endl << endl;
 	}
 
-	else
-	{
+	else {
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PMData";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 0;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PMData";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 0;
 	}
 
 
@@ -6503,25 +5516,22 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	//Delete previous save data
 	dData("Relationship_Data", bErrors);
 
-	if (pRData.size() > 0)
-	{
+	if (pRData.size() > 0) {
 		cout << "Saving player relationship data";
 
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sqlStr = "Insert Into Relationship_Data (RID, Relation_Name, Relation_Affinity) Values (?,?,?);";
 
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 			//Save new data
-			for (i = 0; i < pRData.size(); i++)
-			{
+			for (i = 0; i < pRData.size(); i++) {
 				sqlS1 = pRData.at(i).rName;
 				sqlI1 = pRData.at(i).rAffinity;
 
-				sqlite3_bind_int(statement,1,i);
-				sqlite3_bind_text(statement,2,sqlS1.c_str(),sqlS1.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_int(statement,3,sqlI1);
+				sqlite3_bind_int(statement, 1, i);
+				sqlite3_bind_text(statement, 2, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_int(statement, 3, sqlI1);
 
 				sqlite3_step(statement);
 				sqlite3_reset(statement);
@@ -6530,27 +5540,25 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
-		sqlite3_exec(dBase,"END TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PRData";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PRData";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 		cout << "Done" << endl << endl;
 	}
 
-	else
-	{
+	else {
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "PRData";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 0;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "PRData";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 0;
 	}
 
 
@@ -6559,18 +5567,15 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	//Delete previous save data
 	dData("Generated_Stations", bErrors);
 
-	if (stData.size() > 0)
-	{
+	if (stData.size() > 0) {
 		cout << "Saving station data";
 
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sqlStr = "Insert Into Generated_Stations (ID, Name, Affiliation, Disposition, TLevel, SLevel, Max_Player_Storage_Space, Cost_Multiplier) Values (?,?,?,?,?,?,?,?);";
 
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
-			for (i = 0; i < stData.size(); i++)
-			{
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+			for (i = 0; i < stData.size(); i++) {
 				sqlI1 = stData.at(i).sID;
 				sqlS1 = stData.at(i).sName;
 				sqlS2 = stData.at(i).sAffiliation;
@@ -6580,14 +5585,14 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 				sqlF2 = stData.at(i).sMSpace;
 				sqlF3 = stData.at(i).sCMulti;
 
-				sqlite3_bind_int(statement,1,sqlI1);
-				sqlite3_bind_text(statement,2,sqlS1.c_str(), sqlS1.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_text(statement,3,sqlS2.c_str(), sqlS2.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_text(statement,4,sqlS3.c_str(), sqlS3.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_int(statement,5,sqlI2);
-				sqlite3_bind_int(statement,6,sqlI3);
-				sqlite3_bind_double(statement,7,sqlF2);
-				sqlite3_bind_double(statement,8,sqlF3);
+				sqlite3_bind_int(statement, 1, sqlI1);
+				sqlite3_bind_text(statement, 2, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_text(statement, 3, sqlS2.c_str(), sqlS2.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_text(statement, 4, sqlS3.c_str(), sqlS3.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_int(statement, 5, sqlI2);
+				sqlite3_bind_int(statement, 6, sqlI3);
+				sqlite3_bind_double(statement, 7, sqlF2);
+				sqlite3_bind_double(statement, 8, sqlF3);
 
 				sqlite3_step(statement);
 				sqlite3_reset(statement);
@@ -6596,27 +5601,25 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
-		sqlite3_exec(dBase,"END TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "GStats";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "GStats";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 		cout << "Done" << endl << endl;
 	}
 
-	else
-	{
+	else {
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "GStats";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 0;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "GStats";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 0;
 	}
 
 
@@ -6625,29 +5628,26 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	//Delete previous save data
 	dData("Player_Station_Inv", bErrors);
 
-	if (sPInventory.size() > 0)
-	{
+	if (sPInventory.size() > 0) {
 		cout << "Saving station inventory data";
 
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sqlStr = "Insert Into Player_Station_Inv (TID, SID, IID, Number_Of_Items, Type) Values (?,?,?,?,?);";
 
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 			//Save new data
-			for (i = 0; i < sPInventory.size(); i++)
-			{
+			for (i = 0; i < sPInventory.size(); i++) {
 				sqlI1 = sPInventory.at(i).sID;
 				sqlI2 = sPInventory.at(i).iID;
 				sqlI3 = sPInventory.at(i).NOI;
 				sqlS1 = sPInventory.at(i).iType;
 
-				sqlite3_bind_int(statement,1,i);
-				sqlite3_bind_int(statement,2,sqlI1);
-				sqlite3_bind_int(statement,3,sqlI2);
-				sqlite3_bind_int(statement,4,sqlI3);
-				sqlite3_bind_text(statement,5,sqlS1.c_str(),sqlS1.size(),SQLITE_TRANSIENT);
+				sqlite3_bind_int(statement, 1, i);
+				sqlite3_bind_int(statement, 2, sqlI1);
+				sqlite3_bind_int(statement, 3, sqlI2);
+				sqlite3_bind_int(statement, 4, sqlI3);
+				sqlite3_bind_text(statement, 5, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
 
 				sqlite3_step(statement);
 				sqlite3_reset(statement);
@@ -6656,27 +5656,25 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 
-		finalize(statement, bErrors);\
-			sqlite3_exec(dBase,"END TRANSACTION",NULL, NULL, &error);
+		finalize(statement, bErrors); \
+			sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "GSInv";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "GSInv";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 		cout << "Done" << endl << endl;
 	}
 
-	else
-	{
+	else {
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "GSInv";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 0;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "GSInv";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 0;
 	}
 
 
@@ -6685,19 +5683,16 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	//Delete previous save data
 	dData("Generated_Planets", bErrors);
 
-	if (plData.size() > 0)
-	{
+	if (plData.size() > 0) {
 		cout << "Saving planet data";
 
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sqlStr = "Insert Into Generated_Planets (ID, Name, Affiliation, Disposition, Race, Player_Owned, Is_Destroyed, EKS, Planet_Size, Current_Pop, Max_Pop) Values (?,?,?,?,?,?,?,?,?,?,?);";
 
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 			//Save new data
-			for (i = 0; i < plData.size(); i++)
-			{
+			for (i = 0; i < plData.size(); i++) {
 				sqlI1 = plData.at(i).pID;
 				sqlS1 = plData.at(i).pName;
 				sqlS2 = plData.at(i).pAffiliation;
@@ -6715,23 +5710,22 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 
 				foundAt = sqlS1.find(find);
 
-				if (foundAt != string::npos)
-				{
-					sqlS1.replace(foundAt,1,temp);
+				if (foundAt != string::npos) {
+					sqlS1.replace(foundAt, 1, temp);
 				}
 
 				//Bind parameters
-				sqlite3_bind_int(statement,1,sqlI1);
-				sqlite3_bind_text(statement,2,sqlS1.c_str(),sqlS1.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_text(statement,3,sqlS2.c_str(),sqlS2.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_text(statement,4,sqlS3.c_str(),sqlS3.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_text(statement,5,sqlS4.c_str(),sqlS4.size(),SQLITE_TRANSIENT);
-				sqlite3_bind_int(statement,6,sqlI2);
-				sqlite3_bind_int(statement,7,sqlI3);
-				sqlite3_bind_double(statement,8,sqlF1);
-				sqlite3_bind_double(statement,9,sqlF2);
-				sqlite3_bind_int64(statement,10,sqlLLI1);
-				sqlite3_bind_int64(statement,11,sqlLLI2);
+				sqlite3_bind_int(statement, 1, sqlI1);
+				sqlite3_bind_text(statement, 2, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_text(statement, 3, sqlS2.c_str(), sqlS2.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_text(statement, 4, sqlS3.c_str(), sqlS3.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_text(statement, 5, sqlS4.c_str(), sqlS4.size(), SQLITE_TRANSIENT);
+				sqlite3_bind_int(statement, 6, sqlI2);
+				sqlite3_bind_int(statement, 7, sqlI3);
+				sqlite3_bind_double(statement, 8, sqlF1);
+				sqlite3_bind_double(statement, 9, sqlF2);
+				sqlite3_bind_int64(statement, 10, sqlLLI1);
+				sqlite3_bind_int64(statement, 11, sqlLLI2);
 
 				sqlite3_step(statement);
 				sqlite3_reset(statement);
@@ -6740,27 +5734,25 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
-		sqlite3_exec(dBase,"END TRANSACTION", NULL, NULL, &error);
+		sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "GPlanets";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "GPlanets";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 		cout << "Done" << endl << endl;
 	}
 
-	else
-	{
+	else {
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "GPlanets";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 0;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "GPlanets";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 0;
 	}
 
 
@@ -6769,25 +5761,22 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	//Delete previous save data
 	dData("Planetary_Defenses", bErrors);
 
-	if (plDData.size() > 0)
-	{
+	if (plDData.size() > 0) {
 		cout << "Saving planetary defense data";
 
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sqlStr = "Insert Into Planetary_Defenses (TID, PID, PDID) Values (?,?,?);";
 
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 			//Save new data
-			for (i = 0; i < plDData.size(); i++)
-			{
+			for (i = 0; i < plDData.size(); i++) {
 				sqlI1 = plDData.at(i).pID;
 				sqlI2 = plDData.at(i).pDID;
 
-				sqlite3_bind_int(statement,1,i);
-				sqlite3_bind_int(statement,2,sqlI1);
-				sqlite3_bind_int(statement,3,sqlI2);
+				sqlite3_bind_int(statement, 1, i);
+				sqlite3_bind_int(statement, 2, sqlI1);
+				sqlite3_bind_int(statement, 3, sqlI2);
 
 				sqlite3_step(statement);
 				sqlite3_reset(statement);
@@ -6796,27 +5785,25 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
-		sqlite3_exec(dBase,"END TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "GPDef";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "GPDef";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 		cout << "Done" << endl << endl;
 	}
 
-	else
-	{
+	else {
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "GPDef";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 0;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "GPDef";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 0;
 	}
 
 	//Planet Shields
@@ -6824,25 +5811,22 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 	//Delete previous save data
 	dData("Planetary_Shields", bErrors);
 
-	if (plSData.size() > 0)
-	{
+	if (plSData.size() > 0) {
 		cout << "Saving planetary shield data";
 
-		sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 		sqlStr = "Insert Into Planetary_Shields (TID, PID, MID) Values (?,?,?);";
 
-		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-		{
+		if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 			//Save new data
-			for (i = 0; i < plSData.size(); i++)
-			{
+			for (i = 0; i < plSData.size(); i++) {
 				sqlI1 = plSData.at(i).pID;
 				sqlI2 = plSData.at(i).mID;
 
-				sqlite3_bind_int(statement,1,i);
-				sqlite3_bind_int(statement,2,sqlI1);
-				sqlite3_bind_int(statement,3,sqlI2);
+				sqlite3_bind_int(statement, 1, i);
+				sqlite3_bind_int(statement, 2, sqlI1);
+				sqlite3_bind_int(statement, 3, sqlI2);
 
 				sqlite3_step(statement);
 				sqlite3_reset(statement);
@@ -6851,27 +5835,25 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			}
 		}
 
-		else
-		{
+		else {
 			*bErrors = true;
 			createBInfo();
-			dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		}
 
 		finalize(statement, bErrors);
-		sqlite3_exec(dBase,"END TRANSACTION",NULL, NULL, &error);
+		sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "GPShd";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "GPShd";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 		cout << "Done" << endl << endl;
 	}
 
-	else
-	{
+	else {
 		sFlags_Temp.push_back(saveFlag());
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "GPShd";
-		sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 0;
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "GPShd";
+		sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 0;
 	}
 
 	//Planet ABelts
@@ -6880,15 +5862,13 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 
 	cout << "Saving astroid belts";
 
-	sqlite3_exec(dBase,"BEGIN TRANSACTION", NULL, NULL, &error);
+	sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 	sqlStr = "Insert Into GP_Belts (TID, BID, PID, BName, BSize, BFull) Values (?,?,?,?,?,?);";
 
-	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-	{
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 		//Save new data
-		for (i = 0, i2 = 0; i < belts.size(); i++, i2++)
-		{
+		for (i = 0, i2 = 0; i < belts.size(); i++, i2++) {
 			sqlI1 = i;
 			sqlI2 = belts.at(i).bID;
 			sqlI3 = belts.at(i).pID;
@@ -6896,10 +5876,10 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			sqlF1 = belts.at(i).bSize;
 			sqlI4 = belts.at(i).bBIsFull;
 
-			sqlite3_bind_int(statement,1,sqlI1);
-			sqlite3_bind_int(statement,2,sqlI2);
-			sqlite3_bind_int(statement,3,sqlI3);
-			sqlite3_bind_text(statement,4,sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
+			sqlite3_bind_int(statement, 1, sqlI1);
+			sqlite3_bind_int(statement, 2, sqlI2);
+			sqlite3_bind_int(statement, 3, sqlI3);
+			sqlite3_bind_text(statement, 4, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
 			sqlite3_bind_double(statement, 5, sqlF1);
 			sqlite3_bind_int(statement, 6, sqlI4);
 
@@ -6907,27 +5887,25 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			sqlite3_reset(statement);
 
 			//Only print a . for every ten belts saved
-			if (i2 == 9)
-			{
+			if (i2 == 9) {
 				cout << ".";
 				i2 = 0;
 			}
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
-	sqlite3_exec(dBase,"END TRANSACTION",NULL, NULL, &error);
+	sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 
 	sFlags_Temp.push_back(saveFlag());
-	sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "GPBelt";
-	sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+	sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "GPBelt";
+	sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 	cout << "Done" << endl << endl;
 
 
@@ -6937,15 +5915,13 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 
 	cout << "Saving astroid belts";
 
-	sqlite3_exec(dBase,"BEGIN TRANSACTION", NULL, NULL, &error);
+	sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 	sqlStr = "Insert Into GPB_Roids (AID, BID, PID, AName, ADesc, ASize, OName, AOID, OAmount, XPos, YPos, ZPos) Values (?,?,?,?,?,?,?,?,?,?,?,?);";
 
-	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-	{
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
 		//Save new data
-		for (i = 0, i2 = 0; i < roids.size(); i++, i2++)
-		{
+		for (i = 0, i2 = 0; i < roids.size(); i++, i2++) {
 			sqlI1 = roids.at(i).aID;
 			sqlI2 = roids.at(i).bID;
 			sqlI3 = roids.at(i).pID;
@@ -6959,13 +5935,13 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			sqlI6 = roids.at(i).yPos;
 			sqlI7 = roids.at(i).zPos;
 
-			sqlite3_bind_int(statement,1,sqlI1);
-			sqlite3_bind_int(statement,2,sqlI2);
-			sqlite3_bind_int(statement,3,sqlI3);
-			sqlite3_bind_text(statement,4,sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
-			sqlite3_bind_text(statement,5,sqlS2.c_str(), sqlS2.size(), SQLITE_TRANSIENT);
+			sqlite3_bind_int(statement, 1, sqlI1);
+			sqlite3_bind_int(statement, 2, sqlI2);
+			sqlite3_bind_int(statement, 3, sqlI3);
+			sqlite3_bind_text(statement, 4, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
+			sqlite3_bind_text(statement, 5, sqlS2.c_str(), sqlS2.size(), SQLITE_TRANSIENT);
 			sqlite3_bind_double(statement, 6, sqlF1);
-			sqlite3_bind_text(statement,7,sqlS3.c_str(), sqlS3.size(), SQLITE_TRANSIENT);
+			sqlite3_bind_text(statement, 7, sqlS3.c_str(), sqlS3.size(), SQLITE_TRANSIENT);
 			sqlite3_bind_int(statement, 8, sqlI4);
 			sqlite3_bind_double(statement, 9, sqlF2);
 			sqlite3_bind_int(statement, 10, sqlI5);
@@ -6976,8 +5952,7 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 			sqlite3_reset(statement);
 
 			//Only add a . for every 200 asteroids saved
-			if (i2 == 199)
-			{
+			if (i2 == 199) {
 				cout << ".";
 
 				i2 = 0;
@@ -6985,41 +5960,38 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
-	sqlite3_exec(dBase,"END TRANSACTION",NULL, NULL, &error);
+	sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 
 	sFlags_Temp.push_back(saveFlag());
-	sFlags_Temp.at(sFlags_Temp.size()-1).sfName = "GPBRoid";
-	sFlags_Temp.at(sFlags_Temp.size()-1).sfValue = 1;
+	sFlags_Temp.at(sFlags_Temp.size() - 1).sfName = "GPBRoid";
+	sFlags_Temp.at(sFlags_Temp.size() - 1).sfValue = 1;
 	cout << "Done" << endl << endl;
 
 	//Delete Previous Save Data
-	dData("Save_Flags",bErrors);
+	dData("Save_Flags", bErrors);
 
 	cout << "Saving save flags";
 
-	sqlite3_exec(dBase,"BEGIN TRANSACTION",NULL, NULL, &error);
+	sqlite3_exec(dBase, "BEGIN TRANSACTION", NULL, NULL, &error);
 
 	sqlStr = "Insert Into Save_Flags (ID, Flag_Name, Flag_Value) Values (?,?,?);";
 
-	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK)
-	{
-		for (i = 0; i < sFlags_Temp.size(); i++)
-		{
-			sqlI1 = i+1;
+	if (sqlite3_prepare_v2(dBase, sqlStr.c_str(), sqlStr.size(), &statement, 0) == SQLITE_OK) {
+		for (i = 0; i < sFlags_Temp.size(); i++) {
+			sqlI1 = i + 1;
 			sqlS1 = sFlags_Temp.at(i).sfName;
 			sqlI2 = sFlags_Temp.at(i).sfValue;
 
-			sqlite3_bind_int(statement,1,i);
-			sqlite3_bind_text(statement,2,sqlS1.c_str(),sqlS1.size(),SQLITE_TRANSIENT);
-			sqlite3_bind_int(statement,3,sqlI2);
+			sqlite3_bind_int(statement, 1, i);
+			sqlite3_bind_text(statement, 2, sqlS1.c_str(), sqlS1.size(), SQLITE_TRANSIENT);
+			sqlite3_bind_int(statement, 3, sqlI2);
 
 			sqlite3_step(statement);
 			sqlite3_reset(statement);
@@ -7028,25 +6000,22 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 2",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 2", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement, bErrors);
-	sqlite3_exec(dBase,"END TRANSACTION",NULL, NULL, &error);
+	sqlite3_exec(dBase, "END TRANSACTION", NULL, NULL, &error);
 
-	if (sqlite3_close(dBase) != SQLITE_OK)
-	{
+	if (sqlite3_close(dBase) != SQLITE_OK) {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
-	else
-	{
+	else {
 		*bErrors = false;
 	}
 
@@ -7075,58 +6044,50 @@ void Database::sData(vector<playerData> pData, vector<pShip> plShip, vector<pSSp
 
 }
 
-void Database::dData(string table, bool* bErrors)
-{
+void Database::dData(string table, bool* bErrors) {
 	sqlStr2 = "Delete From " + table;
 
-	if (sqlite3_prepare_v2(dBase, sqlStr2.c_str(), sqlStr2.size(), &statement2, 0) == SQLITE_OK)
-	{
+	if (sqlite3_prepare_v2(dBase, sqlStr2.c_str(), sqlStr2.size(), &statement2, 0) == SQLITE_OK) {
 		sqlite3_step(statement2);
 		*bErrors = false;
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
 	finalize(statement2, bErrors);
 }
 
-int Database::getCount(string table, bool* bErrors)
-{
+int Database::getCount(string table, bool* bErrors) {
 	sqlStr2 = "Select Count(*) From " + table;
 
-	if (sqlite3_prepare_v2(dBase, sqlStr2.c_str(), sqlStr2.size(), &statement2, 0) == SQLITE_OK)
-	{
+	if (sqlite3_prepare_v2(dBase, sqlStr2.c_str(), sqlStr2.size(), &statement2, 0) == SQLITE_OK) {
 		result = sqlite3_step(statement2);
 
-		if (result == SQLITE_ROW)
-		{
+		if (result == SQLITE_ROW) {
 			*bErrors = false;
-			int nRows = sqlite3_column_int(statement2,0);
+			int nRows = sqlite3_column_int(statement2, 0);
 
 			finalize(statement2, bErrors);
 
 			return nRows;
 		}
 
-		else
-		{
+		else {
 			createBInfo();
-			dbug.createBReport("SQL Code 5","No row(s) returned, check for problems",bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+			dbug.createBReport("SQL Code 5", "No row(s) returned, check for problems", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 			finalize(statement2, bErrors);
 			return 0;
 		}
 	}
 
-	else
-	{
+	else {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 		finalize(statement2, bErrors);
 		return 0;
 	}
@@ -7134,43 +6095,47 @@ int Database::getCount(string table, bool* bErrors)
 	finalize(statement2, bErrors);
 }
 
-void Database::finalize(sqlite3_stmt* stmt, bool* bErrors)
-{
-	if (sqlite3_finalize(stmt) != SQLITE_OK)
-	{
+void Database::finalize(sqlite3_stmt* stmt, bool* bErrors) {
+	if (sqlite3_finalize(stmt) != SQLITE_OK) {
 		*bErrors = true;
 		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
 	}
 
-	else
-	{
+	else {
 		*bErrors = false;
 	}
 }
 
-void Database::closeDB(bool* bErrors)
-{
-	if (sqlite3_close(dBase) != SQLITE_OK)
-	{
+void Database::closeDB(bool* bErrors) {
+	if (sqlite3_close(dBase) != SQLITE_OK) {
 		*bErrors = true;
-		createBInfo();
-		dbug.createBReport("SQL Code 3",sqlite3_errmsg(dBase),bLocale + to_string(__LINE__),bTDate,"./OV_Log.txt");
+		createBInfo(__FILE__,to_string(__LINE__), __DATE__,__TIME__,"SQL Code 3", sqlite3_errmsg(dBase), "./OV_Log.txt");
+		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+
+		file = __FILE__;
+		bLocale = "File: " + file + "  Line: " + to_string(__LINE__);
+		time = __TIME__;
+		date = __DATE__;
+		bTDate = date + "   " + time;
 	}
 
-	else
-	{
+	else {
 		*bErrors = false;
 	}
 }
 
-void Database::createBInfo()
-{
-	file = __FILE__;
-	bLocale = "File: " + file + "  Line: ";
 
-	time = __TIME__;
-	date = __DATE__;
 
-	bTDate = date + "  " + time;
+bool Database::checkValidity(char* data, bool *bErrors) {
+	if (data != NULL) {
+		*bErrors = false;
+		return true;
+	}
+	else {
+		createBInfo();
+		dbug.createBReport("SQL Code 6", "Data returned equals NULL", bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
+		*bErrors = true;
+		return false;
+	}
 }

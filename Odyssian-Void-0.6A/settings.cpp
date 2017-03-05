@@ -2,20 +2,18 @@
 #include "debug.h"
 #include "datasystem.h"
 #include <iostream>
-#include <fstream>
 #include <stdlib.h>
 #include <stdarg.h>
+#include "utilities.cpp"
 
 /*#include "boost/program_options.hpp"
 #include "boost/algorithm/string.hpp"
 #include "boost/algorithm/string/split.hpp"*/
 
-using std::string;
 using std::endl;
 using std::cout;
-using std::ifstream;
 using std::to_string;
-using std::vector;
+using std::pair;
 //using boost::split;
 
 //namespace pOps = boost::program_options;
@@ -23,10 +21,44 @@ using std::vector;
 Debug d_gv;
 dataSystem ds_gs;
 
-namespace gSettings
-{
+Settings::Settings() {}
 
-	void getCData() {
+void Settings::setDifficulty(string gameDiff) {
+	gDiff = gameDiff;
+}
+
+void Settings::setItemSettings(map<string, float> argMap) {
+}
+
+void Settings::setABeltSettings(map<string, float> argMap) {
+}
+
+void Settings::setAstroidSettings(map<string, float> argMap) {
+}
+
+void Settings::setPlanetSettings(map<string, float> argMap) {
+	planetSettings = fillMap(argMap);
+}
+
+void Settings::setSkillSettings(map<string, float> argMap) {
+}
+
+void Settings::setGameSettings(map<string, float> argMap) {	
+	gameSettings = fillMap(argMap);
+}
+
+void Settings::setStationSettings(map<string, float> argMap) {
+	stationSettings = fillMap(argMap);
+}
+
+void Settings::setMiscSettings(map<string, float> argMap) {
+}
+
+
+
+
+
+	/*void getCData() {
 		//Get stage 1 settings data from the database
 		ds_gs.rData("Settings", "select from", 0);
 
@@ -927,7 +959,7 @@ namespace gSettings
 	string dDPT; //Comma-delimited string of turns for turn based damage
 	vector<string> sDNames; //Secondary Damage Names
 	vector<float>  sDDPerc; //Secondary Damage Damage Percentges
-	vector<int>	   sDETurns; //Secondary Damage Effect Turns*/
+	vector<int>	   sDETurns; //Secondary Damage Effect Turns
 
 	//Skill Related Values
 	string skillstr;
@@ -961,5 +993,5 @@ namespace gSettings
 	vector<wIDRange> weaps;
 	vector<string> temp1, temp2, temp3, temp4, temp5, temp6; //Temp vectors for storing strings to be cast to something else
 	vector<string> storage; //Holds data from second and third splits to be used to insert that data into a temp vector for later use
-	string tempstr1, tempstr2, tempstr3, tempstr4, tempstr5, tempstr6, tempstr7;
+	string tempstr1, tempstr2, tempstr3, tempstr4, tempstr5, tempstr6, tempstr7;*/
 }

@@ -22,8 +22,8 @@ public:
 	void addAsteroid(int aid, string aName, string aOName, int aID, string aDesc, float aSize, float aOAmount, int x, int y, int z); //Add an asteroid to the belt
 	void removeAsteroid(int i);
 
-	string getABName();
-	float getABSize();
+	string getName();
+	float getSize();
 
 	bool isFull();
 

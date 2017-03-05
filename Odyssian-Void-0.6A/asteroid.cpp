@@ -5,7 +5,7 @@ Asteroid::Asteroid()
 
 }
 
-Asteroid::Asteroid(string aid, string name, string oname, int oID, string desc, float size, float oamount, int x, int y, int z)
+Asteroid::Asteroid(int aid, string name, string oname, int oID, string desc, float size, float oamount, int x, int y, int z)
 {
 	aID = aid;
 	aName = name;

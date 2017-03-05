@@ -61,7 +61,7 @@ public:
 	void aiATasks(Player& cAAttacker, NPC& mNPC); //Allow allies to take actions; putting this here instead of in the b. loop because it will be much more compact this way.
 	void aiATasks_PB(Player& cAAttacker,  Planet* gPlanet, bool shield, bool defense, bool planet); //Allow allies to take actions; putting this here instead of in the b. loop because it will be much more compact this way.
 
-	void createBInfo();
+	//void createBInfo();
 
 private:
 

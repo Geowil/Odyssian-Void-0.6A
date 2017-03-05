@@ -18,6 +18,7 @@ Version:
 1.6 - 03/18/2016
 1.7 - 03/19/2016
 1.8 - 03/30/2016
+1.9 - 05/28/2016
 
 Changes:
 1.0:
@@ -57,6 +58,10 @@ Changes:
 -Exchanged cType for cClass for clones
 -Renumbered the cases for clone query
 
+1.9:
+-Started refactoring the database class
+
+
 End File Header*/
 
 #ifndef DATABASE_H
@@ -79,16 +84,15 @@ class Database
 {
 public:
 	Database();
-
+	
+	//Utility Functions
 	void openDB(bool* bErrors);
 	void openSave(bool* bErrors);
-
+	bool openDBFile(const char* dbFile);
 	void tableTAccess(string table);
-
 	void createStatement(int ID, string operation);
 
 	//Get Data
-
 	//Settings
 	void getSSResults(bool* bErrors);
 	void returnSSResults(vector<settings>& settings);
@@ -157,6 +161,10 @@ public:
 	void getSkResults(bool* bErrors);
 	void returnSkResults(vector<skill>& skills);
 
+	//Requirements
+	void returnReqResults(bool* errors);
+	void returnReqResults(vector<req> reqs);
+
 	//Ship Equipment
 	//CPU
 	void getCPUResults(bool* bErrors);
@@ -199,10 +207,7 @@ public:
 	void returnHSSResults(vector<hss>& sHSStruct);
 
 
-	//Save File
-
 	//Loading
-
 	//Player Data
 	void getPDataResults(bool* bErrors);
 	void returnPDataResults(vector<playerData>& pData);
@@ -295,7 +300,10 @@ public:
 
 
 	//For Debugging
-	void createBInfo();
+	//void createBInfo();
+
+	//Utility Classes
+	bool checkValidity(char *data, bool *bErrors);
 
 private:
 	sqlite3 *dBase;
@@ -335,6 +343,7 @@ private:
 	vector<sm> seSMResults; //Shield Matrix
 	vector<ap> seAPResults; //Armor Plating
 	vector<hss> seHSSResults; //Hull Superstructure
+	vector<req> reqResults; //Requirements
 
 
 	//Save File (Load)
@@ -358,7 +367,6 @@ private:
 	vector<relationData> pRDataResults;
 	vector<saveFlag> sFlags;
 	vector<saveFlag> sFlags_Temp;
-
 
 	//Save File (Saving)
 	//ints
@@ -432,9 +440,6 @@ private:
 	int i,i2,result,i3;
 
 	string dTable;
-
-	//For Debug
-	string file,line,bLocale,time,date,bTDate;
 
 	const char *data;
 
