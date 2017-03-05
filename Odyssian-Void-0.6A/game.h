@@ -134,7 +134,7 @@ public:
 	void startMission(Player& mPlayer);
 	void completeMission(Player& mPlayer);
 
-	void createBInfo();
+	//void createBInfo();
 
 	//Casino Functions
 	void sCSlots(Player& mPlayer);

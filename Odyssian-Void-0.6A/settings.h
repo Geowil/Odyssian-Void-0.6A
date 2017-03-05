@@ -38,14 +38,55 @@ End File Header*/
 #include <string>
 #include <vector>
 #include "g_structs.h"
+#include <map>
 
 
 using std::string;
 using std::vector;
+using std::map;
 
-namespace gSettings
+class Settings
 {
-	void getCData(); //Get the config data from the database
+public:
+	Settings();
+
+	void setDifficulty(string gameDiff);
+	void setItemSettings(map<string,float>argMap);
+	void setABeltSettings(map<string, float>argMap);
+	void setAstroidSettings(map<string, float>argMap);
+	void setPlanetSettings(map<string, float>argMap);
+	void setSkillSettings(map<string, float>argMap);
+	void setGameSettings(map<string, float>argMap);
+	void setStationSettings(map<string, float>argMap);
+	void setMiscSettings(map<string, float>argMap);
+
+private:
+	vector<string> shipClasses;
+	vector<string> weaponClasses;
+	vector<string> ranks;
+	vector<string> empires;
+	vector<string> dipStatuses;
+	vector<int> plClasses;
+	vector<string> missileClasses;
+	vector<string> races;
+	vector<string> resources;
+	vector<string> ores;
+
+	string gDiff; //Selected game difficulty
+	float gScrapMulti; //Scrap multiplier
+
+	//Settings Maps
+	map<string, float> gameSettings;
+	map<string, float> battleSettings;
+	map<string, float> stationSettings;
+	map<string, float> planetSettings;
+
+	map<string, float>::iterator it1;
+
+
+
+
+	/*void getCData(); //Get the config data from the database
 	void printData(); //Print out loaded data
 	void setNIValues(); //Deal with imported lists
 	void setRange(Range& r, string idata, string delimiter, string type);
@@ -267,7 +308,7 @@ namespace gSettings
 	extern int dTTypes; //Number of damage types
 	extern string dTNames; //Comma-delimited string of damage type names
 	extern string dTEDP; //Comma-delimited string of extra damage percentages
-	extern string dDPT; //Comma-delimited string of turns for turn based damage*/
+	extern string dDPT; //Comma-delimited string of turns for turn based damage
 
 	//Skill Related Values
 	extern string skillstr;
@@ -296,7 +337,7 @@ namespace gSettings
 	extern int i1, i2, i3, i4, i5; //For for loops
 	extern int size1, size2, size3, size4; //Store vector size
 	extern vector<string> temp1, temp2, temp3, temp4, temp5, temp6; //For vector imports that have to be cast to another type
-	extern string tempstr1, tempstr2, tempstr3, tempstr4, tempstr5, tempstr6, tempstr7;
+	extern string tempstr1, tempstr2, tempstr3, tempstr4, tempstr5, tempstr6, tempstr7;*/
 
 
 };

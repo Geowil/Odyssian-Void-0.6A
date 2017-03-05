@@ -14,6 +14,10 @@ Version:
 1.2 - 02/20/2016
 1.3 - 03/04/2016
 1.4 - 03/06/2016
+1.5 - 03/18/2016
+1.6 - 03/19/2016
+1.7 - 03/30/2016
+1.8 - 01/22/2017
 
 Changes:
 1.0:
@@ -33,6 +37,24 @@ Changes:
 1.4:
 -Removed and added a few fields for weapon struct to align with current database weapons table structure.
 
+1.5:
+-Added and removed some fields from PShields to account for recent database changes.
+
+1.6:
+-Added a new variable to planetary defense platforms and removed an unneeded field.
+
+1.7:
+-Added variables to empires struct
+-Exchanged cType for cClass for clone struct
+-Split name struct into three different objects: name_pre, name_root, and name_suf
+-Added variables to corporations struct
+
+1.8:
+-Added new scruct to handle settings data import
+-Refactoring; 47 lines removed
+
+
+
 End File Header*/
 
 #ifndef	DATA_PLACEHOLDER_H
@@ -44,15 +66,7 @@ End File Header*/
 using std::string;
 using std::vector;
 
-struct settings
-{
-	//game settings imported here
-	string setSName; //Setting Name
-	string setSVal; //Setting Value
-};
-
-struct ship
-{
+struct ship{
 	int sID;
 	string sName;
 	string sDesc;
@@ -87,8 +101,7 @@ struct ship
 	int sCEXP;
 };
 
-struct weapon
-{
+struct weapon{
 	int wID;
 	string wName;
 	string wDesc;
@@ -125,16 +138,18 @@ struct weapon
 	long long wNWCost;
 };
 
-struct pshield
-{
+struct pshield{
 	int psID;
 	string psName;
 	string psDesc;
 	string psType;
 	int psTLevel;
-	float psCapacity;
-	float psSPRRate; //Rate of shield recharge
-	float psSPRAmount; //How much shields  recharge by
+	int psPSystem; //ID for power system
+	int psCPU; //ID for installed CPU
+	int psRAM; //ID for installed ram
+	int psTSlots; //Total number of slots
+	int psLSlots; //Number of low slots for special equipment
+	int psMSlots; //Number of med slots for special equipment
 	float psSG2;
 	long long psXCost;
 	long long psRCost;
@@ -146,12 +161,12 @@ struct pshield
 	long long psNWCost;
 };
 
-struct pdefense
-{
+struct pdefense{
 	int pdID;
 	string pdName;
 	string pdDesc;
-	string pdType;
+	string pdClass;
+	string pdSClass;
 	int pdTLevel;
 	int pdCPU;
 	int pdRAM;
@@ -162,7 +177,7 @@ struct pdefense
 	int pdHStruc;
 	int pdWTSys;
 	int pdTSlots;
-	int pdLSLots;
+	int pdLSlots;
 	int pdMSlots;
 	int pdHSlots;
 	float pdCargo;
@@ -178,12 +193,11 @@ struct pdefense
 	int pdCXP;
 };
 
-struct clone
-{
+struct clone{
 	int		cID;
 	string  cName;
 	string  cDesc;
-	string  cType;
+	string  cClass;
 	int		cTLevel;
 	float   cSG2;
 	long long		cXCost;
@@ -194,13 +208,10 @@ struct clone
 	long long		cUCost;
 	long long		cPluCost;
 	long long		cNWCost;
-	string  cEffect;
-	float cEAmount;
 };
 
 
-struct mission
-{
+struct mission{
 	int		mID;
 	string	mName;
 	string	mDesc;
@@ -228,8 +239,7 @@ struct mission
 	string  mType;
 };
 
-struct skill
-{
+struct skill{
 	int		 skID; //Skill ID
 	string	 skName; //Skill Name
 	string	 skDesc; //Skill Description
@@ -244,21 +254,18 @@ struct skill
 	int	 skCXPCost; //CXP Cost
 };
 
-struct req
-{
+struct req{
 	int rEID; //Entity ID (ID of the item this requirement is for)
 	int rRID; //Requirement ID OR Skill Rank, Player Rank, Player CEL, ext.
 	string rType; //Describes that the value of rRID is; ex: Player Rank means the value of rRID is a numerical value representing the rank the play must have
 };
 
 
-struct message
-{
+struct message{
 	string mes;
 };
 
-struct planetName
-{
+struct planetName{
 	string pName;
 	int pID;
 };
@@ -270,38 +277,43 @@ struct pMData //For Planetary militia in later versions
 };
 */
 
-struct empires
-{
-
+struct empires{
+	int eID;
+	string eName;
+	int eRace;
+	string eDesc;
 };
 
-struct corporations
-{
-
+struct corporations{
+	int cID;
+	string 
 };
 
-struct diplomacy
-{
+struct diplomacy{
 	string dDisposition;
 };
 
-struct race
-{
+struct race{
 	string rName;
 };
 
-struct ranks
-{
+struct ranks{
 	string rkName;
 };
 
-struct name
-{
-	string name_;
+struct name_pre{
+	string nPrefix;
 };
 
-struct resource
-{
+struct name_root{
+	string nRoot;
+};
+
+struct name_suf{
+	string nSuffix;
+};
+
+struct resource{
 	string rName;
 	string rDesc;
 	float rSG2;
@@ -309,8 +321,7 @@ struct resource
 	int rXCost;
 };
 
-struct ore
-{
+struct ore{
 	string oName;
 	string oDesc;
 	float oSG2;
@@ -326,7 +337,7 @@ struct ore
 	long long oXCost;
 };
 
-struct misc {
+struct misc{
 	string eName; //Name
 	string eDesc; //Description
 	string eType; //Type
@@ -360,8 +371,7 @@ struct misc {
 	long long eNWCost;
 };
 
-struct cpu
-{
+struct cpu{
 	int seID; //ID
 	string seName; //Name
 	string seDesc; //Description
@@ -380,8 +390,7 @@ struct cpu
 	long long seNWCost;
 };
 
-struct ram
-{
+struct ram{
 	int seID; //ID
 	string seName; //Name
 	string seDesc; //Description
@@ -401,8 +410,7 @@ struct ram
 	long long seNWCost;
 };
 
-struct psys
-{
+struct psys{
 	int seID; //ID
 	string seName; //Name
 	string seDesc; //Description
@@ -421,8 +429,7 @@ struct psys
 	long long seNWCost;
 };
 
-struct spsys
-{
+struct spsys{
 	int seID; //ID
 	string seName; //Name
 	string seDesc; //Description
@@ -445,8 +452,7 @@ struct spsys
 	long long seNWCost;
 };
 
-struct ap
-{
+struct ap{
 	int seID; //ID
 	string seName; //Name
 	string seDesc; //Description
@@ -472,8 +478,7 @@ struct ap
 	long long seNWCost;
 };
 
-struct sm
-{
+struct sm{
 	int seID; //ID
 	string seName; //Name
 	string seDesc; //Description
@@ -499,8 +504,7 @@ struct sm
 	long long seNWCost;
 };
 
-struct hss
-{
+struct hss{
 	int seID; //ID
 	string seName; //Name
 	string seDesc; //Description
@@ -527,8 +531,7 @@ struct hss
 	long long seNWCost;
 };
 
-struct wfg
-{
+struct wfg{
 	int seID; //ID
 	string seName; //Name
 	string seDesc; //Description
@@ -552,8 +555,7 @@ struct wfg
 	long long seNWCost;
 };
 
-struct wts
-{
+struct wts{
 	int seID; //ID
 	string seName; //Name
 	string seDesc; //Description
@@ -577,8 +579,7 @@ struct wts
 	long long seNWCost;
 };
 
-struct eng
-{
+struct eng{
 	int seID; //ID
 	string seName; //Name
 	string seDesc; //Description
@@ -607,8 +608,7 @@ struct eng
 
 
 //Save File Table Structs
-struct planetData
-{
+struct planetData{
 	int pID; //Planet ID
 	string pName;
 	string pAffiliation;
@@ -622,20 +622,17 @@ struct planetData
 	long long int pMPop;
 };
 
-struct pDefData
-{
+struct pDefData{
 	int pID; //Planet ID from table
 	int pDID; //Planetary Defense ID for table lookup
 };
 
-struct pSData
-{
+struct pSData{
 	int pID;
 	int mID; //Moduel table item ID for table look up
 };
 
-struct pABelts
-{
+struct pABelts{
 	int bID; //Belt ID from table
 	int pID; //Planet ID that this belt belongs to
 	string bName; //Belt name
@@ -643,8 +640,7 @@ struct pABelts
 	int bBIsFull; //bool: is this belt full (using integer interface)
 };
 
-struct pABRoids
-{
+struct pABRoids{
 	int aID; //Asteroid ID from table
 	int bID; //Belt ID that this roid belongs to
 	int pID;
@@ -661,8 +657,7 @@ struct pABRoids
 	int zPos;
 };
 
-struct playerData
-{
+struct playerData{
 	string pName;
 	string pRank;
 	int pCXPLevel;
@@ -689,8 +684,7 @@ struct playerData
 	string pAffiliation;
 };
 
-struct pShip
-{
+struct pShip{
 	string psName;
 	string psClass;
 	int psTLevel;
@@ -720,8 +714,7 @@ struct pShip
 	int psWTS;
 };
 
-struct pSInv
-{
+struct pSInv{
 	int sID; //Ship ID
 	int iID; //Item ID
 	string iType; //Item Type
@@ -729,29 +722,25 @@ struct pSInv
 	float iSG2; //Space each item takes up
 };
 
-struct pSSpread
-{
+struct pSSpread{
 	int sID; //HPSlot value in the weapon vector indicated by the below variable
 	string sWType; //What type of weapon was stored in the slot
 	int sPID; //Spread ID, used to track which weapons belong to which spread
 };
 
-struct pSHPVect
-{
+struct pSHPVect{
 	int sID; //HPSlot value in the weapon vector indicated by the below variable
 	int wID; //Weapon ID
 	string sWType; //What type of weapon was stored in the slot
 };
 
-struct pWingmenData
-{
+struct pWingmenData{
 	string pWName;
 	string pWRank;
 	int pWCXPLevel;
 };
 
-struct pWShip
-{
+struct pWShip{
 	int pWID; //ID from table to deal with multiple wingmen w/o having to use a crap ton of tables for each
 	string sName;
 	string sClass;
@@ -777,24 +766,21 @@ struct pWShip
 	int sMWSpreads;
 };
 
-struct pWSSpread
-{
+struct pWSSpread{
 	int sID; //HPSlot value in the weapon vector indicated by the below variable
 	string sWType; //What type of weapon was stored in the slot
 	int wID; //ID of wingmen this spread belongs to
 	int sPID; //Spread ID
 };
 
-struct pWSHPVect
-{
+struct pWSHPVect{
 	int sID; //HPSlot value in the weapon vector indicated by the below variable
 	int wep_ID; //Weapon ID
 	string sWType; //What type of weapon was stored in the slot
 	int wID; //ID of wingmen this spread belongs to
 };
 
-struct stationData
-{
+struct stationData{
 	int sID; //ID from table for dealing with player inventories in various stations
 	string sName;
 	string sAffiliation;
@@ -805,8 +791,7 @@ struct stationData
 	float sCMulti; //Cost multiplier
 };
 
-struct sPInv
-{
+struct sPInv{
 	int sID; //Station ID
 	int iID; //Item ID
 	int NOI; //Number of items stored
@@ -814,8 +799,7 @@ struct sPInv
 	float iSG2;
 };
 
-struct missionData
-{
+struct missionData{
 	int mID; //Mission ID
 	string mName;
 	string mDesc;
@@ -844,16 +828,22 @@ struct missionData
 	int mState; //Mission State
 };
 
-struct relationData
-{
+struct relationData{
 	string	rName; //Name of entity the relationship is relevent to (IE: Earth Alliance)
 	int		rAffinity; //Value of the relationship; negative numbers indicate a negative relationship.
 };
 
-struct saveFlag
-{
+struct saveFlag{
 	string sfName; //Flag Name
 	int sfValue; //Flag Value
+};
+
+struct gameSettings {
+	string gsDifficulty;
+	float gsScrapMulti;
+	string gsRanks;
+	string gsShipClasses;
+	string gsWeaponTypes;
 };
 
 #endif

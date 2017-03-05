@@ -115,6 +115,7 @@
     <ClInclude Include="e_node.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="key_value.h" />
+    <ClInclude Include="plSystem.h" />
     <ClInclude Include="settings.h" />
     <ClInclude Include="g_structs.h" />
     <ClInclude Include="hand.h" />
@@ -168,6 +169,7 @@
     <ClCompile Include="entity.cpp" />
     <ClCompile Include="game.cpp" />
     <ClCompile Include="key_value.cpp" />
+    <ClCompile Include="plSystem.cpp" />
     <ClCompile Include="settings.cpp" />
     <ClCompile Include="hardPoint.cpp" />
     <ClCompile Include="hstructure.cpp" />
@@ -192,6 +194,7 @@
     <ClCompile Include="target.cpp" />
     <ClCompile Include="tDamage.cpp" />
     <ClCompile Include="trade.cpp" />
+    <ClCompile Include="utilities.cpp" />
     <ClCompile Include="weapon.cpp" />
     <ClCompile Include="wfgen.cpp" />
     <ClCompile Include="wtsystem.cpp" />

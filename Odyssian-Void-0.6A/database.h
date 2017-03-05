@@ -15,6 +15,10 @@ Version:
 1.3 - 02/21/2016
 1.4 - 03/04/2016
 1.5 - 03/06/2016
+1.6 - 03/18/2016
+1.7 - 03/19/2016
+1.8 - 03/30/2016
+1.9 - 05/28/2016
 
 Changes:
 1.0:
@@ -42,6 +46,22 @@ Changes:
 1.5:
 -Changed the weapon database query/return functions to follow the current database structure.
 
+1.6:
+-Changed the planetary shield query/return functions to follow recent database changes.
+
+1.7:
+-Changed planetary defense platform query/return functions for recent database changes.
+-Refactored the code structure to remove unsused space.
+
+1.8:
+-Split 'name' functions into three: prefix, root, and suffix to align to database changes
+-Exchanged cType for cClass for clones
+-Renumbered the cases for clone query
+
+1.9:
+-Started refactoring the database class
+
+
 End File Header*/
 
 #ifndef DATABASE_H
@@ -64,16 +84,15 @@ class Database
 {
 public:
 	Database();
-
+	
+	//Utility Functions
 	void openDB(bool* bErrors);
 	void openSave(bool* bErrors);
-
+	bool openDBFile(const char* dbFile);
 	void tableTAccess(string table);
-
 	void createStatement(int ID, string operation);
 
 	//Get Data
-
 	//Settings
 	void getSSResults(bool* bErrors);
 	void returnSSResults(vector<settings>& settings);
@@ -123,8 +142,12 @@ public:
 	void returnCResults(vector<clone>& iClone);
 
 	//Names
-	void getRNResults(bool* bErrors);
-	void returnRNResults(vector<name>& names);
+	void getRNPResults(bool* bErrors);
+	void returnRNPResults(vector<name_pre>& names);
+	void getRNRResults(bool* bErrors);
+	void returnRNRResults(vector<name_root>& names);
+	void getRNSResults(bool* bErrors);
+	void returnRNSResults(vector<name_suf>& names);
 
 	//Resource Data
 	void getRDResults(bool* bErrors);
@@ -137,6 +160,10 @@ public:
 	//Skill Data
 	void getSkResults(bool* bErrors);
 	void returnSkResults(vector<skill>& skills);
+
+	//Requirements
+	void returnReqResults(bool* errors);
+	void returnReqResults(vector<req> reqs);
 
 	//Ship Equipment
 	//CPU
@@ -180,10 +207,7 @@ public:
 	void returnHSSResults(vector<hss>& sHSStruct);
 
 
-	//Save File
-
 	//Loading
-
 	//Player Data
 	void getPDataResults(bool* bErrors);
 	void returnPDataResults(vector<playerData>& pData);
@@ -276,7 +300,10 @@ public:
 
 
 	//For Debugging
-	void createBInfo();
+	//void createBInfo();
+
+	//Utility Classes
+	bool checkValidity(char *data, bool *bErrors);
 
 private:
 	sqlite3 *dBase;
@@ -299,7 +326,9 @@ private:
 	vector<pshield> psResults; //Planetary Shields
 	vector<pdefense> pdResults; //Plantary Defenses
 	vector<clone> cResults; //Clones
-	vector<name> nResults; //Names
+	vector<name_pre> nPResults; //Name Preffix
+	vector<name_root> nRResults; //Name Root
+	vector<name_suf> nSResults; //Name Suffix
 	vector<resource> resResults; //Resource
 	vector<ore> oResults; //Ore
 	vector<skill> skResults; //Skill
@@ -314,6 +343,7 @@ private:
 	vector<sm> seSMResults; //Shield Matrix
 	vector<ap> seAPResults; //Armor Plating
 	vector<hss> seHSSResults; //Hull Superstructure
+	vector<req> reqResults; //Requirements
 
 
 	//Save File (Load)
@@ -337,7 +367,6 @@ private:
 	vector<relationData> pRDataResults;
 	vector<saveFlag> sFlags;
 	vector<saveFlag> sFlags_Temp;
-
 
 	//Save File (Saving)
 	//ints
@@ -411,9 +440,6 @@ private:
 	int i,i2,result,i3;
 
 	string dTable;
-
-	//For Debug
-	string file,line,bLocale,time,date,bTDate;
 
 	const char *data;
 

@@ -13,7 +13,7 @@ class Asteroid
 {
 public:
 	Asteroid();
-	Asteroid(string aid, string name, string oname, int oID, string desc, float size, float oamount, int x, int y, int z); //Constructor to add astroid to vector
+	Asteroid(int aid, string name, string oname, int oID, string desc, float size, float oamount, int x, int y, int z); //Constructor to add astroid to vector
 
 	void updateOAmount(float amount, string operation);
 
@@ -31,7 +31,7 @@ public:
 	int getAOID();
 
 private:
-	string aID; //Asteroid ID
+	int aID; //Asteroid ID
 	string aName; //Asteroid name
 	string aOName; //Asteroid ore name
 	int aOID; //Asteroid ore id

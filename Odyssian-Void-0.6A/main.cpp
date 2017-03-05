@@ -19,7 +19,6 @@
 
 
 using namespace std;
-namespace gs = gS;
 
 //Game mGame_m;
 //Player mPlayer;
@@ -29,6 +28,7 @@ namespace gs = gS;
 //battleProc bp_m;
 //Map m_m;
 //dataSystem ds_m;
+Settings settings;
 
 
 int main()
@@ -47,12 +47,8 @@ int main()
 	bool locked = false; //Use this to lock the main menu from the player during certain events such as using a clone
 
 	string eResult; //Event result; used for any time a loop is done where multiple outcomes, more than two, can be achieved
-
-	//Get data from configuration file
-	gs::getCData();
-	gs::printData();
 	
-	/*mp_m.cdPrint();
+	mp_m.cdPrint();
 
 	cout << setprecision(2) << fixed; //for percentages later on
 

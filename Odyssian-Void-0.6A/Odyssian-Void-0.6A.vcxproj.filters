@@ -180,6 +180,9 @@
     <ClInclude Include="key_value.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="plSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="abelt.cpp">
@@ -315,6 +318,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="key_value.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="utilities.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="plSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

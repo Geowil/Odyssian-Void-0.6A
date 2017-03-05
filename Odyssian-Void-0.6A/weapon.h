@@ -11,6 +11,7 @@ Created On:  Sunday, March 06, 2016 (file header was added on this date)
 
 Version:
 1.0 - 03/06/2016
+1.1 - 03/19/2016
 
 
 Changes:
@@ -19,6 +20,8 @@ Changes:
 -Added a function to return the subclass of the weapon
 -Moved some functions around as a start to ordering based on the order of the data in the data_placeholder struct master list
 
+1.1:
+-Added wSClass variable
 
 End File Header*/
 
@@ -70,7 +73,7 @@ public:
 	void wSetup(int wCode); //Get weapon data from database
 	
 	float getSG2();
-	void setSG2(float sg2); //Really neccessary?
+	void setSG2(float sg2); //Really neccessary? yes, some skills may reduce the sg2 of items
 
 	string data; //string data container
 
@@ -81,7 +84,7 @@ protected:
 	string	wName; //name
 	int	wTLevel; //technology level
 	string wClass; //weapon class
-	int	wType; //weapon type
+	string wSClass; //weapon sub class
 	//int wASpeed; //weapon attack speed
 	bool wStatus; //weapon activity status
 	int wDTimer; //weapon disable timer
