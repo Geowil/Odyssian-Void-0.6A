@@ -28,6 +28,14 @@ public:
 	void gSave(Player& mPlayer);
 	void gLoad(Player& mPlayer);
 
+	//Universe Functions
+	void setupUniverse();
+	void universeTick();
+	
+
+	//Planetary System Functions
+	void setupSystems();
+	
 
 	//Planet Functions
 
@@ -344,6 +352,9 @@ private:
 
 	//For Debug
 	string file,line,bLocale,time,date,bTDate;
+
+	//Universe counter
+	int unTickCount; //Increment every turn and check against Universe setting to determine if expansion is needed
 
 
 	//Casino Members

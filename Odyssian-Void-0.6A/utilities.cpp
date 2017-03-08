@@ -4,6 +4,7 @@
 #include "planet.h"
 #include "abelt.h"
 #include "debug.h"
+#include "plSystem.h"
 
 using std::map;
 using std::string;
@@ -16,16 +17,19 @@ static map<string, float> fillMap(map<string, float>argMap);
 static map<string, int> fillMap(map<string, int>argMap);
 static vector<Planet> updateVec(vector<Planet> plVec, Planet pl);
 static vector<aBelt> updateVec(vector<aBelt> abVec, aBelt ab);
+static vector<planetarySystem> updateVec(vector<planetarySystem> plsVec, planetarySystem plSys);
 
 //Utility Members
 static map<string, float>::iterator itf1;
 static map<string, int>::iterator iti1;
 static vector<Planet>::iterator itpl1;
 static vector<aBelt>::iterator itab1;
+static vector<planetarySystem>::iterator itpls1;
 static map<string, float>rtnFMap;
 static map<string, int>rtnIMap;
 static vector<Planet>rtnPlVec;
 static vector<aBelt>rtnABVec;
+static vector<planetarySystem>rtnPLSVec;
 
 int i1;
 
@@ -85,6 +89,20 @@ static vector<aBelt> updateVec(vector<aBelt> abVec, aBelt ab) {
 	}
 
 	return abVec;
+}
+
+static vector<planetarySystem> updateVec(vector<planetarySystem> plsVec, planetarySystem plSys) {
+	for (i1 = 0; i1 < plsVec.size(); i1++) {
+		if (i1 == plsVec.size() - 1 && plsVec[i1].getName() != plSys.getName()) {
+			createBInfo(__FILE__, to_string(__LINE__), __DATE__, __TIME__, "Planetary system Not Found", "Planetary system " + plSys.getName() + " not found in universe.  Cannot update.", "./OV_Log.txt");
+		}
+		else if (plsVec[i1].getName() == plSys.getName()) {
+			plsVec[i1] = plSys;
+			break; //Found and update, no longer need to loop
+		}
+	}
+
+	return plsVec;
 }
 
 static void createBInfo(string fl, string lnNm, string dt, string tm, string errCode, string errMsg, string fPath) {

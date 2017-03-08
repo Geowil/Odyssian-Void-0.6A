@@ -183,6 +183,9 @@
     <ClInclude Include="plSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="universe.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="abelt.cpp">
@@ -324,6 +327,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="plSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="universe.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

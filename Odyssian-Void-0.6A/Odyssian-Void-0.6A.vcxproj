@@ -146,6 +146,7 @@
     <ClInclude Include="tDamage.h" />
     <ClInclude Include="tnode.h" />
     <ClInclude Include="trade.h" />
+    <ClInclude Include="universe.h" />
     <ClInclude Include="weapon.h" />
     <ClInclude Include="wfgen.h" />
     <ClInclude Include="wtsystem.h" />
@@ -194,6 +195,7 @@
     <ClCompile Include="target.cpp" />
     <ClCompile Include="tDamage.cpp" />
     <ClCompile Include="trade.cpp" />
+    <ClCompile Include="universe.cpp" />
     <ClCompile Include="utilities.cpp" />
     <ClCompile Include="weapon.cpp" />
     <ClCompile Include="wfgen.cpp" />

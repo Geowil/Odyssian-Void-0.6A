@@ -61,3 +61,7 @@ void planetarySystem::updateSecRating(float sec, string operation) {
 		plsSec = sec;
 	}
 }
+
+string planetarySystem::getName() {
+	return plsName;
+}

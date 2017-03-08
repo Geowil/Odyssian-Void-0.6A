@@ -1,3 +1,6 @@
+#ifndef PLSYSTEM__H
+#define PLSYSTEM__H
+
 #include <string>
 #include <vector>
 #include "planet.h";
@@ -28,6 +31,7 @@ public:
 
 	void updateSecRating(float sec, string operation);
 
+	string getName();
 
 private:
 	string plsName;
@@ -36,3 +40,4 @@ private:
 	vector<Planet> plsPlanets;
 	vector<aBelt> plsABelts;
 };
+#endif

@@ -566,6 +566,15 @@ void Game::gLoad(Player& mPlayer)
 	}
 }
 
+void Game::setupUniverse() {
+}
+
+void Game::universeTick() {
+}
+
+void Game::setupSystems() {
+}
+
 void Game::getPNames()
 {
 	pNStorage.push_back(string());
