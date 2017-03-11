@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <algorithm>
 #include <cstdlib>
+#include <math.h>
 
 #include "entity.h"
 #include "battleproc.h"
@@ -14,11 +15,11 @@
 #include "mission.h"
 #include "relation.h"
 #include "nameGen.h"
-#include "globalvars.h"
+#include "settings.h"
 #include "skills.h"
+#include "utilities.cpp"
 
 using namespace std;
-namespace gv = gVars;
 
 //Class References
 dataSystem ds_e;
@@ -27,12 +28,6 @@ Mission m_e;
 Relation r_e;
 nameGen ng_e;
 
-//NPC Scrap Multipliers
-#define Scrap_Level_1 1
-#define Scrap_Level_2 0.15
-#define Scrap_Level_3 0.25
-#define Scrap_Level_4 0.40
-#define Scrap_Level_5 0.75
 
 //Entity
 Entity::Entity()
@@ -513,24 +508,33 @@ void Player::rUp()
 	}
 }
 
-void Player::cELUp()
+void Player::cELUp(Settings& gSettings)
 {
-	if (pCXP >= tNCELevel)
+	if (pCXP >= cxpToCELUp + pCXP)
 	{
 		pCELevel += 1;
-		tNCELevel = (pCELevel * 1250.0) * 1000000.0 * pCELevel / (((1000.0 * (pCELevel * 1250.0)) / 2) / 2.3);
+		cxpFac = gSettings.getFSetting("player", "cxp_factor");
+		cxpBase = gSettings.getISetting("player", "cxp_base");
+
+		tNCELevel = calcXP(cxpBase, pCELevel, cxpFac);
+		cxpToCELUp = tNCELevel;
 	}
 }
 
-void Player::cELDown()
+void Player::cELDown(Settings& gSettings)
 {
+	//How to handle xp to next lvl in this case??
 	pCELevel -= 1;
 }
 
-int Player::calcOCXPTNL(int cLevel)
+int Player::calcOCXPTNL(int cLevel, Settings& gSettings)
 {
+	//Need to revisit as we are adding xp to stack of xp, not matching next lvl amount; this code wont work.
 	cLevel -= 1;
-	return (cLevel * 1250.0) * 1000000.0 * cLevel / (((1000.0 * (cLevel * 1250.0)) / 2) / 2.3);
+	cxpFac = gSettings.getFSetting("player", "cxp_factor");
+	cxpBase = gSettings.getISetting("player", "cxp_base");
+
+	return calcXP(cxpBase,cLevel,cxpFac);
 }
 
 void Player::updateCEXP(int cExp, string operation)

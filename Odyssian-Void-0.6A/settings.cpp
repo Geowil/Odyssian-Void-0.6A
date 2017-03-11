@@ -37,21 +37,53 @@ void Settings::setAstroidSettings(map<string, float> argMap) {
 }
 
 void Settings::setPlanetSettings(map<string, float> argMap) {
-	planetSettings = fillMap(argMap);
+	planetSettings1 = fillMap(argMap);
 }
 
 void Settings::setSkillSettings(map<string, float> argMap) {
 }
 
 void Settings::setGameSettings(map<string, float> argMap) {	
-	gameSettings = fillMap(argMap);
+	gameSettings1 = fillMap(argMap);
+}
+
+void Settings::setGameSettings(map<string, int> argMap) {
+	gameSettings2 = fillMap(argMap);
 }
 
 void Settings::setStationSettings(map<string, float> argMap) {
-	stationSettings = fillMap(argMap);
+	stationSettings1 = fillMap(argMap);
 }
 
 void Settings::setMiscSettings(map<string, float> argMap) {
+}
+
+float Settings::getFSetting(string setType, string setName) {
+	if (setType == "game") {
+		if (gameSettings1.count(setName)) {
+			return gameSettings1.find(setName)->second;
+		} else {
+			createBInfo(__FILE__, to_string(__LINE__), __DATE__, __TIME__, "Setting Not Found", "Game Setting " + setName + " not found in gamesSettings1", "./OV_Log.txt");
+			return 0.0f;
+		}
+	} else {
+		createBInfo(__FILE__, to_string(__LINE__), __DATE__, __TIME__, "Unknown Setting Type", setType + " is not a known setting type.", "./OV_Log.txt");
+		return 0.0f;
+	}
+}
+
+int Settings::getISetting(string setType, string setName) {
+	if (setType == "game") {
+		if (gameSettings1.count(setName)) {
+			return gameSettings2.find(setName)->second;
+		} else {
+			createBInfo(__FILE__, to_string(__LINE__), __DATE__, __TIME__, "Setting Not Found", "Game Setting " + setName + " not found in gamesSettings2", "./OV_Log.txt");
+			return 0;
+		}
+	} else {
+		createBInfo(__FILE__, to_string(__LINE__), __DATE__, __TIME__, "Unknown Setting Type", setType + " is not a known setting type.", "./OV_Log.txt");
+		return 0;
+	}
 }
 
 

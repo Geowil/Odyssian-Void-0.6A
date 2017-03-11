@@ -6111,13 +6111,6 @@ void Database::closeDB(bool* bErrors) {
 	if (sqlite3_close(dBase) != SQLITE_OK) {
 		*bErrors = true;
 		createBInfo(__FILE__,to_string(__LINE__), __DATE__,__TIME__,"SQL Code 3", sqlite3_errmsg(dBase), "./OV_Log.txt");
-		dbug.createBReport("SQL Code 3", sqlite3_errmsg(dBase), bLocale + to_string(__LINE__), bTDate, "./OV_Log.txt");
-
-		file = __FILE__;
-		bLocale = "File: " + file + "  Line: " + to_string(__LINE__);
-		time = __TIME__;
-		date = __DATE__;
-		bTDate = date + "   " + time;
 	}
 
 	else {

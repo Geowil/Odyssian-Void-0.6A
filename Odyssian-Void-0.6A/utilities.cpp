@@ -1,6 +1,7 @@
 #include<map>
 #include<string>
 #include<vector>
+#include<math.h>
 #include "planet.h"
 #include "abelt.h"
 #include "debug.h"
@@ -111,4 +112,8 @@ static void createBInfo(string fl, string lnNm, string dt, string tm, string err
 	bTDate = dt + "  " + tm;
 
 	db.createBReport(errCode, errMsg, bLocale, bTDate, fPath);
+}
+
+static int calcXP(int base, int level, float factor) {
+	return trunc(base * (pow(level, factor)));
 }

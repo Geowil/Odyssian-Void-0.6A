@@ -10,7 +10,7 @@
 class Game;
 class Map;
 
-using std::string;class Entity{public:	Entity();
+using std::string;class Entity{public:	Entity();
 	bool isHostile(); //Is this class hostile?	int getDia(); //get diamonds	int getDrac(); //get draconic	int getXarn(); //get xarn	int getLith(); //get lithium	int getNWaste(); //get nuclear waste	int getPlat(); //get platinum	int getPlut(); //get plutonium	int getRubies(); //get rubies	int getUra(); //get uranium
 	int getCELvl();
 	string getAffil(); //Get entity affiliation
@@ -25,40 +25,34 @@ using std::string;class Entity{public:	Entity();
 	Ship ship; //ship
 
 protected:
-	string eName; //Entity Name
-	string eRace; //Entity Race
-	string eRank; //Entity Rank
-	string eDispo; //Entity disposition
-	string eAffil; //What group the entity is affiliated with
+	string eName; //Entity Name
+	string eRace; //Entity Race
+	string eRank; //Entity Rank
+	string eDispo; //Entity disposition
+	string eAffil; //What group the entity is affiliated with
 	string eBStatus; //Entity Battle Status (ie: Destroyed or Retreated)
-
-	int eCXPLevel;
-
-	/*
+	int eCXPLevel;	float cxpFac;
+	int cxpBase;
+	/*
 		0.6A resource plan:
-
-		In 0.6 modding support will be added to the game.  To accomodate this large changes need to be made to resources.  Resources must be exploded out into their own
+		In 0.6 modding support will be added to the game.  To accomodate this large changes need to be made to resources.  Resources must be exploded out into their own
 		class.  Any object that uses resources will then have a vector of resource objects that will contain a value and a name.
-
-		For saving the vector can be placed into two '-' delimited strings, RName and RValue, and stored in the database.  This allows for custom resources to be added and used within the game.
-
-		Make sure resource names are loaded from ini/cfg file.
-		*/
-
-	//Entity Resources
-	int	eXarn;
-	int eRub;
-	int eDia;
-	int eDrac;
-	int eLith;
-	int eUra;
-	int ePlut;
-	int ePlat;
+		For saving the vector can be placed into two '-' delimited strings, RName and RValue, and stored in the database.  This allows for custom resources to be added and used within the game.
+
+		Make sure resource names are loaded from ini/cfg file.
+	*/
+	//Entity Resources
+	int	eXarn;
+	int eRub;
+	int eDia;
+	int eDrac;
+	int eLith;
+	int eUra;
+	int ePlut;
+	int ePlat;
 	int eNWaste;
-
-	float damage; //primary damage
-	float damage2; //run over damage
-	bool bIsHostile; //Is this entity a hostile class (any other sub-class except player)?
+	float damage; //primary damage
+	float damage2; //run over damage	bool bIsHostile; //Is this entity a hostile class (any other sub-class except player)?
 	int sID, sIID, iID; //Station Id for identifying station that has clones and the inventory slot they are in
 };
 
@@ -99,9 +93,9 @@ public:
 	void pCBWeap(); //choose starting ship bomb armaments
 	void pCMWeap(); //choose starting ship missile armaments
 	void pCLWeap(); //choose starting ship laser armaments
-	void cELUp(); //check if player combat experience meets level requiments
-	void cELDown();
-	int calcOCXPTNL(int cLevel); //Calculate the CEXP to next level for the previous level and then return it; for clone system
+	void cELUp(Settings& gSettings); //check if player combat experience meets level requiments
+	void cELDown(Settings& gSettings);
+	int calcOCXPTNL(int cLevel, Settings& gSettings); //Calculate the CEXP to next level for the previous level and then return it; for clone system
 	void rUp(); //increase players rank
 
 	//Set CEXP
@@ -161,7 +155,7 @@ private:
 	int pTKills; //player titan kills
 	int pCELevel; //player combat experience level
 	int pCXP; //Entity CEXP
-	int tNCELevel; //to next combat experience level
+	int tNCELevel; //to next combat experience level	int cxpToCELUp; //This is used to store what amount of xp was needed for determining if the player has actually earned enough cxp to lvl up
 
 	int pBOKill; //To track bounty kills in the new few versions of SC
 

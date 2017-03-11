@@ -57,8 +57,12 @@ public:
 	void setPlanetSettings(map<string, float>argMap);
 	void setSkillSettings(map<string, float>argMap);
 	void setGameSettings(map<string, float>argMap);
+	void setGameSettings(map<string, int>argMap);
 	void setStationSettings(map<string, float>argMap);
 	void setMiscSettings(map<string, float>argMap);
+
+	float getFSetting(string setType, string setName);
+	int	getISetting(string setType, string setName);
 
 private:
 	vector<string> shipClasses;
@@ -76,10 +80,11 @@ private:
 	float gScrapMulti; //Scrap multiplier
 
 	//Settings Maps
-	map<string, float> gameSettings;
+	map<string, float> gameSettings1;
+	map<string, int> gameSettings2;
 	map<string, float> battleSettings;
-	map<string, float> stationSettings;
-	map<string, float> planetSettings;
+	map<string, float> stationSettings1;
+	map<string, float> planetSettings1;
 
 	map<string, float>::iterator it1;
 
