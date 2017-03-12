@@ -28,351 +28,236 @@ Mission m_e;
 Relation r_e;
 nameGen ng_e;
 
-
 //Entity
-Entity::Entity()
-{
+Entity::Entity(){}
 
-}
-
-void Entity::applySDamage(float damage) //Shields
-{
+//Shields
+void Entity::applySDamage(float damage){
 	ship.updateSShield(damage, "sub");
 }
 
-void Entity::applyADamage(float damage) //Armor
-{
+//Armor
+void Entity::applyADamage(float damage){
 	ship.updateSArmor(damage, "sub");
 }
 
-void Entity::applyHDamage(float damage) //Hull
-{
+//Hull
+void Entity::applyHDamage(float damage) {
 	ship.updateSHull(damage, "sub");
 }
 
-void Entity::updateXarn(int xarn, string operation)
-{
-	if (operation == "add")
-	{
+void Entity::updateXarn(int xarn, string operation){
+	if (operation == "add"){
 		eXarn += xarn;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		eXarn -= xarn;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		eXarn = xarn;
 	}
 }
 
-void Entity::updateRubies(int rubies, string operation)
-{
-	if (operation == "add")
-	{
+void Entity::updateRubies(int rubies, string operation){
+	if (operation == "add"){
 		eRub += rubies;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		eRub -= rubies;
-	}
-	
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		eRub = rubies;
 	}
 }
 
-void Entity::updateDia(int dia, string operation)
-{
-	if (operation == "add")
-	{
+void Entity::updateDia(int dia, string operation){
+	if (operation == "add"){
 		eDia += dia;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		eDia -= dia;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		eDia = dia;
 	}
 }
 
-void Entity::updateDrac(int drac, string operation)
-{
-	if (operation == "add")
-	{
+void Entity::updateDrac(int drac, string operation){
+	if (operation == "add"){
 		eDrac += drac;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		eDrac -= drac;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		eDrac = drac;
 	}
 }
 
-void Entity::updateLith(int lith, string operation)
-{
-	if (operation == "add")
-	{
+void Entity::updateLith(int lith, string operation){
+	if (operation == "add"){
 		eLith += lith;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		eLith -= lith;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		eLith = lith;
 	}
 }
 
-void Entity::updatePlat(int plat, string operation)
-{
-	if (operation == "add")
-	{
+void Entity::updatePlat(int plat, string operation){
+	if (operation == "add"){
 		ePlat += plat;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		ePlat -= plat;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		ePlat = plat;
 	}
 }
 
-void Entity::updateUra(int ura, string operation)
-{
-	if (operation == "add")
-	{
+void Entity::updateUra(int ura, string operation){
+	if (operation == "add"){
 		eUra += ura;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		eUra -= ura;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		eUra = ura;
 	}
 }
 
-void Entity::updatePlut(int plut, string operation)
-{
-	if (operation == "add")
-	{
+void Entity::updatePlut(int plut, string operation){
+	if (operation == "add"){
 		ePlut += plut;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		ePlut -= plut;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		ePlut = plut;
 	}
 }
 
-void Entity::updateNWaste(int nwaste, string operation)
-{
-	if (operation == "add")
-	{
+void Entity::updateNWaste(int nwaste, string operation){
+	if (operation == "add"){
 		eNWaste += nwaste;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		eNWaste -= nwaste;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		eNWaste = nwaste;
 	}
 }
 
-bool Entity::isHostile()
-{
+bool Entity::isHostile(){
 	return bIsHostile;
 }
 
-string Entity::getDispo()
-{
+string Entity::getDispo(){
 	return eDispo;
 }
 
-string Entity::getName()
-{
+string Entity::getName(){
 	return eName;
 }
 
-void Entity::setName(string name)
-{
+void Entity::setName(string name){
 	eName = name;
 }
 
-void Entity::setRace(string race)
-{
+void Entity::setRace(string race){
 	eRace = race;
 }
 
-void Entity::setRank(string rank)
-{
+void Entity::setRank(string rank){
 	eRank = rank;
 }
 
-void Entity::setDispo(string dispo)
-{
+void Entity::setDispo(string dispo){
 	eDispo = dispo;
 }
 
-string Entity::getRank()
-{
+string Entity::getRank(){
 	return eRank;
 }
 
-string Entity::getRace()
-{
+string Entity::getRace(){
 	return eRace;
 }
 
-string Entity::getAffil()
-{
+string Entity::getAffil(){
 	return eAffil;
 }
 
-void Entity::setAffil(string affil)
-{
+void Entity::setAffil(string affil){
 	eAffil = affil;
 }
 
-int Entity::getCELvl()
-{
+int Entity::getCELvl(){
 	return eCXPLevel;
 }
 
-int Entity::getXarn()
-{
+int Entity::getXarn(){
 	return eXarn;
 }
 
-int Entity::getRubies()
-{
+int Entity::getRubies(){
 	return eRub;
 }
 
-int Entity::getDia()
-{
+int Entity::getDia(){
 	return eDia;
 }
 
-int Entity::getDrac()
-{
+int Entity::getDrac(){
 	return eDrac;
 }
 
-int Entity::getLith()
-{
+int Entity::getLith(){
 	return eLith;
 }
 
-int Entity::getPlat()
-{
+int Entity::getPlat(){
 	return ePlat;
 }
 
-int Entity::getUra()
-{
+int Entity::getUra(){
 	return eUra;
 }
 
-int Entity::getPlut()
-{
+int Entity::getPlut(){
 	return ePlut;
 }
 
-int Entity::getNWaste()
-{
+int Entity::getNWaste(){
 	return eNWaste;
 }
 
-void Entity::setStatus(string estat)
-{
+void Entity::setStatus(string estat){
 	eBStatus = estat;
 }
 
-string Entity::getStatus()
-{
+string Entity::getStatus(){
 	return eBStatus;
 }
 
-Entity* Entity::rEntity()
-{
+Entity* Entity::rEntity(){
 	return this;
 }
 
-bool Entity::gOver(Game& mGame, Player& mPlayer)
-{
-	if (mp_e.cClone(&sID, &sIID, mGame))
-	{
+bool Entity::gOver(Game& mGame, Player& mPlayer){
+	if (mp_e.cClone(&sID, &sIID, mGame)){
 		iID = mGame.gStations.at(sID).sInventory.at(sIID).getIID(); //Get the item ID for use in a bit
-
 		mGame.useClone(mPlayer, sID, sIID, iID);
 
 		return false;
-	}
-
-	else
-	{
+	} else{
 		mp_e.gOver();
 
 		return true;
 	}
 }
 
-void Entity::updateCXPLvl(int lvl, string operation)
-{
-	if (operation == "add")
-	{
+void Entity::updateCXPLvl(int lvl, string operation){
+	if (operation == "add"){
 		eCXPLevel =+ lvl;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		eCXPLevel -= lvl;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		eCXPLevel = lvl;
 	}
 }
 
 
 //Player
-Player::Player()
-{
+Player::Player(){
 	eRank = gv::eRanks.at(0);
 	pPDest = 0;
 
@@ -394,8 +279,7 @@ Player::Player()
 	eAffil = "Earth Alliance";
 }
 
-void Player::pSetup()
-{
+void Player::pSetup(){
 	//begin player definition
 	cout << "Please enter your name: " << endl;
 	cout << "> ";
@@ -437,82 +321,55 @@ void Player::pSetup()
 	pRelations.at(2).createRelation("Sluikan Imperium",-85); //Create the default relationship for Sluikan
 }
 
-void Player::pCShip()
-{
+void Player::pCShip(){
 	sCode = mp_e.pCMenu1();
 	mp_e.mCScreen(false);
 	ship.initShip(sCode);
 }
 
-void Player::pCLWeap()
-{
+void Player::pCLWeap(){
 	wCode = mp_e.pCMenu2();
 	mp_e.mCScreen(false);
 	ship.iWeapon("laser", wCode);
 }
 
-void Player::pCMWeap()
-{
+void Player::pCMWeap(){
 	wCode = mp_e.pCMenu3();
 	mp_e.mCScreen(false);
 	ship.iWeapon("missile", wCode);
 }
 
-void Player::pCBWeap()
-{
+void Player::pCBWeap(){
 	wCode = mp_e.pCMenu4();
 	mp_e.mCScreen(false);
 	ship.iWeapon("bomb", wCode);
 }
 
-void Player::rUp()
-{
-	if ((pCELevel > 102) && (pFKills > 75) && (pDKills > 38) && (pCKills > 25) && (pBCKills > 16) && (pBKills > 20) && (pMKills > 0)) //Add command ships when c. ships are added
-	{
+void Player::rUp(){
+
+	//Add command ships when c. ships are added
+	if ((pCELevel > 102) && (pFKills > 75) && (pDKills > 38) && (pCKills > 25) && (pBCKills > 16) && (pBKills > 20) && (pMKills > 0)){
 		eRank = gv::eRanks.at(gv::rkTypes-1);
-	}
-
-	else if ((pCELevel > 80) && (pFKills > 50) && (pDKills > 23) && (pCKills > 18) && (pBCKills > 8) && (pBKills > 6))
-	{
+	} else if ((pCELevel > 80) && (pFKills > 50) && (pDKills > 23) && (pCKills > 18) && (pBCKills > 8) && (pBKills > 6)){
 		eRank = gv::eRanks.at(gv::rkTypes-2);
-	}
-
-	else if ((pCELevel > 62) && (pFKills > 35) && (pDKills > 18) && (pCKills > 10) && (pBCKills > 0) && (pBKills > 0))
-	{
+	} else if ((pCELevel > 62) && (pFKills > 35) && (pDKills > 18) && (pCKills > 10) && (pBCKills > 0) && (pBKills > 0)){
 		eRank = gv::eRanks.at(gv::rkTypes-3);
-	}
-
-	else if ((pCELevel > 45) && (pFKills > 25) && (pDKills > 12) && (pCKills > 4))
-	{
+	} else if ((pCELevel > 45) && (pFKills > 25) && (pDKills > 12) && (pCKills > 4)){
 		eRank = gv::eRanks.at(gv::rkTypes-4);
-	}
-
-	else if ((pCELevel > 26) && (pFKills > 20) && (pDKills > 8) && (pCKills > 0))
-	{
+	} else if ((pCELevel > 26) && (pFKills > 20) && (pDKills > 8) && (pCKills > 0)){
 		eRank = gv::eRanks.at(gv::rkTypes-5);
-	}
-
-	else if ((pCELevel > 18) && (pFKills > 14) && (pDKills > 3))
-	{
+	} else if ((pCELevel > 18) && (pFKills > 14) && (pDKills > 3)){
 		eRank = gv::eRanks.at(gv::rkTypes-6);
-	}
-
-	else if ((pCELevel > 10) && (pFKills > 8) && (pDKills > 0))
-	{
+	} else if ((pCELevel > 10) && (pFKills > 8) && (pDKills > 0)){
 		eRank = gv::eRanks.at(gv::rkTypes-7);
-	}
-
-	else if ((pCELevel > 5) && (pFKills > 5))
-	{
+	} else if ((pCELevel > 5) && (pFKills > 5)){
 		eRank = gv::eRanks.at(gv::rkTypes-2);
 	}
 }
 
-void Player::cELUp(Settings& gSettings)
-{
-	if (pCXP >= cxpToCELUp + pCXP)
-	{
-		pCELevel += 1;
+void Player::cELUp(Settings& gSettings){
+	if (0 >= tNCELevel){
+		updateCXPLvl(1,"add");
 		cxpFac = gSettings.getFSetting("player", "cxp_factor");
 		cxpBase = gSettings.getISetting("player", "cxp_base");
 
@@ -521,14 +378,12 @@ void Player::cELUp(Settings& gSettings)
 	}
 }
 
-void Player::cELDown(Settings& gSettings)
-{
+void Player::cELDown(Settings& gSettings){
 	//How to handle xp to next lvl in this case??
 	pCELevel -= 1;
 }
 
-int Player::calcOCXPTNL(int cLevel, Settings& gSettings)
-{
+int Player::calcOCXPTNL(int cLevel, Settings& gSettings){
 	//Need to revisit as we are adding xp to stack of xp, not matching next lvl amount; this code wont work.
 	cLevel -= 1;
 	cxpFac = gSettings.getFSetting("player", "cxp_factor");
@@ -537,90 +392,67 @@ int Player::calcOCXPTNL(int cLevel, Settings& gSettings)
 	return calcXP(cxpBase,cLevel,cxpFac);
 }
 
-void Player::updateCEXP(int cExp, string operation)
-{
-	if (operation == "add")
-	{
+void Player::updateCEXP(int cExp, string operation){
+	if (operation == "add"){
 		pCXP += cExp;
-	}
-
-	else if (operation == "sub")
-	{
+		tNCELevel -= cExp;
+	} else if (operation == "sub"){
 		pCXP -= cExp;
-	}
-
-	else if (operation == "set")
-	{
+		tNCELevel += cExp;
+	} else if (operation == "set"){
 		pCXP = cExp;
 	}
 
 	cELUp(); //Check if the player can level up
 }
 
-int Player::getCEXP()
-{
+int Player::getCEXP(){
 	return pCXP;
 }
 
-int Player::getCXPTNL()
-{
+int Player::getCXPTNL(){
 	return tNCELevel;
 }
 
-void Player::setCXPTNL(int cXPTNL)
-{
+void Player::setCXPTNL(int cXPTNL){
 	tNCELevel = cXPTNL;
 }
 
-int Player::getCELvl()
-{
+int Player::getCELvl(){
 	return pCELevel;
 }
 
-void Player::addNSkill(int id)
-{
+void Player::addNSkill(int id){
 	pSkills.push_back(Skill());
 	pSkills.at(pSkills.size()-1).newSkill(id);
 }
 
-void Player::trainSkill(int id, int time)
-{
-	for (i = 0; i < pSkills.size(); i++)
-	{
-		if (pSkills.at(i).getSID() ==  id)
-		{
+void Player::trainSkill(int id, int time){
+	for (i = 0; i < pSkills.size(); i++){
+		if (pSkills.at(i).getSID() ==  id){
 			pSkills.at(i).aTraining(time);
 		}
 	}
 }
 
-void Player::setBOKills(int i)
-{
+void Player::setBOKills(int i){
 	pBOKill = i;
 }
 
-int Player::getBOKills()
-{
+int Player::getBOKills(){
 	return pBOKill;
 }
 
-void Player::addMission(int mCode)
-{
+void Player::addMission(int mCode){
 	ds_e.rData("Mission_Data","select from",mCode);
 
-	for (i = 0;; i++)
-	{
-		if (i >= pMissions.size())
-		{
+	for (i = 0;; i++){
+		if (i >= pMissions.size()){
 			pMissions.push_back(m_e);
 			pMissions.at(pMissions.size()-1).createMission(mCode);
 			break;
-		}
-
-		else if (i < pMissions.size())
-		{
-			if (pMissions.at(i).getMName() == ds_e.getMName())
-			{
+		} else if (i < pMissions.size()){
+			if (pMissions.at(i).getMName() == ds_e.getMName()){
 				cout << mp_e.mRMessage(21) << endl;
 				break;
 			}
@@ -628,38 +460,26 @@ void Player::addMission(int mCode)
 	}
 }
 
-void Player::updateMission(int mCode, bool bChangeTName, string tname, bool bChangeMLSector, string mlsector, bool bChangeMLSystem, string mlsystem, bool bChangeDur, int duration)
-{
-	for (i = 0;; i++)
-	{
+void Player::updateMission(int mCode, bool bChangeTName, string tname, bool bChangeMLSector, string mlsector, bool bChangeMLSystem, string mlsystem, bool bChangeDur, int duration){
+	for (i = 0;; i++){
 		ds_e.rData("Mission_Data","select from",mCode);
 
-		if (i >= pMissions.size())
-		{
+		if (i >= pMissions.size()){
 			cout << mp_e.mRMessage(22) << endl;
-		}
-
-		else if (pMissions.at(i).getMName() == ds_e.getMName())
-		{
+		} else if (pMissions.at(i).getMName() == ds_e.getMName()){
 			pMissions.at(i).updateMission(bChangeTName, tname, bChangeMLSector, mlsector, bChangeMLSystem, mlsystem, bChangeDur, duration);
 			break;
 		}
 	}
 }
 
-void Player::removeMission(int mCode)
-{
-	for (i = 0;;i++)
-	{
+void Player::removeMission(int mCode){
+	for (i = 0;;i++){
 		ds_e.rData("Mission_Data","select from",mCode);
 
-		if (i >= pMissions.size())
-		{
+		if (i >= pMissions.size()){
 			cout << mp_e.mRMessage(23) << endl;
-		}
-
-		else if (pMissions.at(i).getMID() == ds_e.getMisID())
-		{
+		} else if (pMissions.at(i).getMID() == ds_e.getMisID()){
 			pCMissions.push_back(Mission());
 
 			pCMissions.at(pCMissions.size()-1) = pMissions.at(i); //Save closed mission to the pCMissions vector
@@ -669,321 +489,205 @@ void Player::removeMission(int mCode)
 	}
 }
 
-void Player::getMission(int mCode)
-{
-	for (i = 0;;i++)
-	{
+void Player::getMission(int mCode){
+	for (i = 0;;i++){
 		ds_e.rData("Mission_Data","select from",mCode);
 
-		if (i >= pMissions.size())
-		{
+		if (i >= pMissions.size()){
 			cout << mp_e.mRMessage(24) << endl;
-		}
-
-		else if (pMissions.at(i).getMID() == ds_e.getMisID())
-		{
+		} else if (pMissions.at(i).getMID() == ds_e.getMisID()){
 			pMissions.at(i).getCMInfo();
 		}
 	}
 }
 
-void Player::getAMissions()
-{
-	for (i = 0; i < pMissions.size(); i++)
-	{
-		if (pMissions.at(i).getMState() == "In Progress")
-		{
+void Player::getAMissions(){
+	for (i = 0; i < pMissions.size(); i++){
+		if (pMissions.at(i).getMState() == "In Progress"){
 			pMissions.at(i).getBMInfo();
 		}
 	}
 }
 
-void Player::completeMission(int mCode)
-{
+void Player::completeMission(int mCode){
 	pMissions.at(mCode).setMState(2); //Set state to completed
-
 	pCMissions.push_back(Mission()); //Push back a new element on completed missions vector
-
 	pCMissions.at(pCMissions.size()-1) = pMissions.at(mCode); //load completed mission into newly created element
-
 	pMissions.erase(pMissions.begin() + mCode); //Remove the completed mission from the missions vector
 }
 
-void Player::addRelation(string rName, int rAffinity)
-{
+void Player::addRelation(string rName, int rAffinity){
 	pRelations.push_back(Relation(rName, rAffinity));
 }
 
-void Player::updateRelation(string rName, int rAffinity, string operation)
-{
-	for (i = 0; i < pRelations.size(); i++)
-	{
-		if (pRelations.at(i).getRName() == rName)
-		{
-			if (operation == "add")
-			{
+void Player::updateRelation(string rName, int rAffinity, string operation){
+	for (i = 0; i < pRelations.size(); i++){
+		if (pRelations.at(i).getRName() == rName){
+			if (operation == "add"){
 				pRelations.at(i).setRAffinity((pRelations.at(i).getAffinity() + rAffinity));
-			}
-
-			else if (operation == "sub")
-			{
+			} else if (operation == "sub"){
 				pRelations.at(i).setRAffinity((pRelations.at(i).getAffinity() - rAffinity));
-			}
-
-			else if (operation == "set")
-			{
+			} else if (operation == "set"){
 				pRelations.at(i).setRAffinity(rAffinity);
 			}
 		}
 	}
 }
 
-vector<Relation> Player::getARStatus()
-{
+vector<Relation> Player::getARStatus(){
 	return pRelations;
 }
 
-int Player::getRStatus(string rName)
-{
-	for (i = 0; i <= pRelations.size(); i++)
-	{
-		if ( i == pRelations.size()) //If relation does not exist create it and return the affinity; this first due to how the if statement is set up
-		{
+int Player::getRStatus(string rName){
+	for (i = 0; i <= pRelations.size(); i++){
+		if ( i == pRelations.size()){ //If relation does not exist create it and return the affinity; this first due to how the if statement is set up
 			pRelations.push_back(r_e);
 			pRelations.at(i).createRelation(rName, getIRange(-20, 20)); //Create the relation and set the affinity to a value in the range
 
 			return pRelations.at(i).getAffinity();
-		}
-
-		else if (i < pRelations.size())
-		{
-			if (rName == pRelations.at(i).getRName())
-			{
+		} else if (i < pRelations.size()){
+			if (rName == pRelations.at(i).getRName()){
 				return pRelations.at(i).getAffinity();
 			}
 		}
 	}
 }
 
-int Player::getNOWingmen()
-{
+int Player::getNOWingmen(){
 	return eWingmen.size();
 }
 
-void Player::updateDPlanets(int pd, string operation)
-{
-	if (operation == "add")
-	{
+void Player::updateDPlanets(int pd, string operation){
+	if (operation == "add"){
 		pPDest += pd;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		pPDest -= pd;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		pPDest = pd;
 	}
 }
 
-int Player::getDPlanets()
-{
+int Player::getDPlanets(){
 	return pPDest;
 }
 
-void Player::updateFKills(int kills, string operation)
-{
-	if (operation == "add")
-	{
+void Player::updateFKills(int kills, string operation){
+	if (operation == "add"){
 		pFKills += kills;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		pFKills -= kills;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		pFKills = kills;
 	}
 }
 
-void Player::updateDKills(int kills, string operation)
-{
-	if (operation == "add")
-	{
+void Player::updateDKills(int kills, string operation){
+	if (operation == "add"){
 		pDKills += kills;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		pDKills -= kills;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		pDKills = kills;
 	}
 }
 
-void Player::updateCKills(int kills, string operation)
-{
-	if (operation == "add")
-	{
+void Player::updateCKills(int kills, string operation){
+	if (operation == "add"){
 		pCKills += kills;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		pCKills -= kills;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		pCKills = kills;
 	}
 }
 
-void Player::updateBCKills(int kills, string operation)
-{
-	if (operation == "add")
-	{
+void Player::updateBCKills(int kills, string operation){
+	if (operation == "add"){
 		pBCKills += kills;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		pBCKills -= kills;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		pBCKills = kills;
 	}
 }
 
-void Player::updateBKills(int kills, string operation)
-{
-	if (operation == "add")
-	{
+void Player::updateBKills(int kills, string operation){
+	if (operation == "add"){
 		pBKills += kills;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		pBKills -= kills;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		pBKills = kills;
 	}
 }
 
-void Player::updateCSKills(int kills, string operation)
-{
-	if (operation == "add")
-	{
+void Player::updateCSKills(int kills, string operation){
+	if (operation == "add"){
 		pCSKills += kills;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		pCSKills -= kills;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		pCSKills = kills;
 	}
 }
 
-void Player::updateMKills(int kills, string operation)
-{
-	if (operation == "add")
-	{
+void Player::updateMKills(int kills, string operation){
+	if (operation == "add"){
 		pMKills += kills;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		pMKills -= kills;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		pMKills = kills;
 	}
 }
 
-void Player::updateTKills(int kills, string operation)
-{
-	if (operation == "add")
-	{
+void Player::updateTKills(int kills, string operation){
+	if (operation == "add"){
 		pTKills += kills;
-	}
-
-	else if (operation == "sub")
-	{
+	} else if (operation == "sub"){
 		pTKills -= kills;
-	}
-
-	else if (operation == "set")
-	{
+	} else if (operation == "set"){
 		pTKills = kills;
 	}
 }
 
-int Player::getFKills()
-{
+int Player::getFKills(){
 	return pFKills;
 }
 
-int Player::getDKills()
-{
+int Player::getDKills(){
 	return pDKills;
 }
 
-int Player::getCKills()
-{
+int Player::getCKills(){
 	return pCKills;
 }
 
-int Player::getBCKills()
-{
+int Player::getBCKills(){
 	return pBCKills;
 }
 
-int Player::getBKills()
-{
+int Player::getBKills(){
 	return pBKills;
 }
 
-int Player::getCSKills()
-{
+int Player::getCSKills(){
 	return pCSKills;
 }
 
-int Player::getMKills()
-{
+int Player::getMKills(){
 	return pMKills;
 }
 
-int Player::getTKills()
-{
+int Player::getTKills(){
 	return pTKills;
 }
 
-void Player::addWingman()
-{
+void Player::addWingman(){
 	eWingmen.push_back(Player());
 }
 
-void Player::loadMission1(missionData mData)
-{
+void Player::loadMission1(missionData mData){
 	pMissions.push_back(Mission());
 
 	pMissions.at(pMissions.size()-1).setMID(mData.mID);
@@ -1014,8 +718,7 @@ void Player::loadMission1(missionData mData)
 	pMissions.at(pMissions.size()-1).setMState(mData.mState);
 }
 
-void Player::loadMission2(missionData mData)
-{
+void Player::loadMission2(missionData mData){
 	pCMissions.push_back(Mission());
 
 	pCMissions.at(pCMissions.size()-1).setMID(mData.mID);
@@ -1046,34 +749,25 @@ void Player::loadMission2(missionData mData)
 	pCMissions.at(pCMissions.size()-1).setMState(mData.mState);
 }
 
-void Player::loadRelation(relationData rData)
-{
+void Player::loadRelation(relationData rData){
 	pRelations.push_back(Relation());
 
 	pRelations.at(pRelations.size()-1).setRName(rData.rName);
 	pRelations.at(pRelations.size()-1).setRAffinity(rData.rAffinity);
 }
 
-void Player::setPLocale(string s)
-{
+void Player::setPLocale(string s){
 	pLocale = s;
 }
 
-string Player::getPLocale()
-{
+string Player::getPLocale(){
 	return pLocale;
 }
 
-
-
 //NPC
-NPC::NPC()
-{
+NPC::NPC(){}
 
-}
-
-NPC::NPC(string name, string race, string rank, int sCode)
-{
+NPC::NPC(string name, string race, string rank, int sCode){
 	eName = name;
 	eRace = race;
 	eRank = rank;
@@ -1083,8 +777,7 @@ NPC::NPC(string name, string race, string rank, int sCode)
 	sCode = nSID;
 }
 
-void NPC::hSetup(int rkCode, int rCode, int sCode)
-{
+void NPC::hSetup(int rkCode, int rCode, int sCode){
 	//Set Race
 	ds_e.rData("Race_Data","select from",rCode);
 	eRace = ds_e.getERace();
@@ -1113,213 +806,131 @@ void NPC::hSetup(int rkCode, int rCode, int sCode)
 	cEXPReward = 0;
 }
 
-int NPC::getXarn()
-{
+int NPC::getXarn(){
 	rStorage = getIRange(1, 100);
 
-	if ((rStorage >= 1) && (rStorage <= 40))
-	{
+	if ((rStorage >= 1) && (rStorage <= 40)){
 		return eXarn*Scrap_Level_1;
-	}
-
-	else if ((rStorage >= 41) && (rStorage <= 75))
-	{
+	} else if ((rStorage >= 41) && (rStorage <= 75)){
 		return eXarn*Scrap_Level_2;
-	}
-
-	else if ((rStorage >= 76) && (rStorage <= 100))
-	{
+	} else if ((rStorage >= 76) && (rStorage <= 100)){
 		return eXarn*Scrap_Level_3;
 	}
 }
 
-int NPC::getRubies()
-{
+int NPC::getRubies(){
 	rStorage = getIRange(1, 100);
 
-	if ((rStorage >= 1) && (rStorage <= 40))
-	{
+	if ((rStorage >= 1) && (rStorage <= 40)){
 		return eRub*Scrap_Level_1;
-	}
-
-	else if ((rStorage >= 41) && (rStorage <= 75))
-	{
+	} else if ((rStorage >= 41) && (rStorage <= 75)){
 		return eRub*Scrap_Level_2;
-	}
-
-	else if ((rStorage >= 76) && (rStorage <= 100))
-	{
+	} else if ((rStorage >= 76) && (rStorage <= 100)){
 		return eRub*Scrap_Level_3;
 	}
 }
 
-int NPC::getDia()
-{
+int NPC::getDia(){
 	rStorage = getIRange(1, 100);
 
-	if ((rStorage >= 1) && (rStorage <= 40))
-	{
+	if ((rStorage >= 1) && (rStorage <= 40)){
 		return eDia*Scrap_Level_1;
-	}
-
-	else if ((rStorage >= 41) && (rStorage <= 75))
-	{
+	} else if ((rStorage >= 41) && (rStorage <= 75)){
 		return eDia*Scrap_Level_2;
-	}
-
-	else if ((rStorage >= 76) && (rStorage <= 100))
-	{
+	} else if ((rStorage >= 76) && (rStorage <= 100)){
 		return eDia*Scrap_Level_3;
 	}
 }
 
-int NPC::getDrac()
-{
+int NPC::getDrac(){
 	rStorage = getIRange(1, 100);
 
-	if ((rStorage >= 1) && (rStorage <= 40))
-	{
+	if ((rStorage >= 1) && (rStorage <= 40)){
 		return eDrac*Scrap_Level_1;
-	}
-
-	else if ((rStorage >= 41) && (rStorage <= 75))
-	{
+	} else if ((rStorage >= 41) && (rStorage <= 75)){
 		return eDrac*Scrap_Level_2;
-	}
-
-	else if ((rStorage >= 76) && (rStorage <= 100))
-	{
+	} else if ((rStorage >= 76) && (rStorage <= 100)){
 		return eDrac*Scrap_Level_3;
 	}
 }
 
-int NPC::getLith()
-{
+int NPC::getLith(){
 	rStorage = getIRange(1, 100);
 
-	if ((rStorage >= 1) && (rStorage <= 40))
-	{
+	if ((rStorage >= 1) && (rStorage <= 40)){
 		return eLith*Scrap_Level_1;
-	}
-
-	else if ((rStorage >= 41) && (rStorage <= 75))
-	{
+	} else if ((rStorage >= 41) && (rStorage <= 75)){
 		return eLith*Scrap_Level_2;
-	}
-
-	else if ((rStorage >= 76) && (rStorage <= 100))
-	{
+	} else if ((rStorage >= 76) && (rStorage <= 100)){
 		return eLith*Scrap_Level_3;
 	}
 }
 
-int NPC::getPlat()
-{
+int NPC::getPlat(){
 	rStorage = getIRange(1, 100);
 
-	if ((rStorage >= 1) && (rStorage <= 40))
-	{
+	if ((rStorage >= 1) && (rStorage <= 40)){
 		return ePlat*Scrap_Level_1;
-	}
-
-	else if ((rStorage >= 41) && (rStorage <= 75))
-	{
+	} else if ((rStorage >= 41) && (rStorage <= 75)){
 		return ePlat*Scrap_Level_2;
-	}
-
-	else if ((rStorage >= 76) && (rStorage <= 100))
-	{
+	} else if ((rStorage >= 76) && (rStorage <= 100)){
 		return ePlat*Scrap_Level_3;
 	}
 }
 
-int NPC::getUra()
-{
+int NPC::getUra(){
 	rStorage = getIRange(1, 100);
 
-	if ((rStorage >= 1) && (rStorage <= 40))
-	{
+	if ((rStorage >= 1) && (rStorage <= 40)){
 		return eUra*Scrap_Level_1;
-	}
-
-	else if ((rStorage >= 41) && (rStorage <= 75))
-	{
+	} else if ((rStorage >= 41) && (rStorage <= 75)){
 		return eUra*Scrap_Level_2;
-	}
-
-	else if ((rStorage >= 76) && (rStorage <= 100))
-	{
+	} else if ((rStorage >= 76) && (rStorage <= 100)){
 		return eUra*Scrap_Level_3;
 	}
 }
 
-int NPC::getPlut()
-{
+int NPC::getPlut(){
 	rStorage = getIRange(1, 100);
 
-	if ((rStorage >= 1) && (rStorage <= 40))
-	{
+	if ((rStorage >= 1) && (rStorage <= 40)){
 		return ePlut*Scrap_Level_1;
-	}
-
-	else if ((rStorage >= 41) && (rStorage <= 75))
-	{
+	} else if ((rStorage >= 41) && (rStorage <= 75)){
 		return ePlut*Scrap_Level_2;
-	}
-
-	else if ((rStorage >= 76) && (rStorage <= 100))
-	{
+	} else if ((rStorage >= 76) && (rStorage <= 100)){
 		return ePlut*Scrap_Level_3;
 	}
 }
 
-int NPC::getNWaste()
-{
+int NPC::getNWaste(){
 	rStorage = getIRange(1, 100);
 
-	if ((rStorage >= 1) && (rStorage <= 40))
-	{
+	if ((rStorage >= 1) && (rStorage <= 40)){
 		return eNWaste*Scrap_Level_1;
-	}
-
-	else if ((rStorage >= 41) && (rStorage <= 75))
-	{
+	} else if ((rStorage >= 41) && (rStorage <= 75)) {
 		return eNWaste*Scrap_Level_2;
-	}
-
-	else if ((rStorage >= 76) && (rStorage <= 100))
-	{
+	} else if ((rStorage >= 76) && (rStorage <= 100)){
 		return eNWaste*Scrap_Level_3;
 	}
 }
 
-int NPC::getCXPReward()
-{
+int NPC::getCXPReward(){
 	rStorage = getIRange(1, 100);
 
-	if ((rStorage >= 1) && (rStorage <= 40))
-	{
+	if ((rStorage >= 1) && (rStorage <= 40)){
 		return cEXPReward*Scrap_Level_1;
-	}
-
-	else if ((rStorage >= 41) && (rStorage <= 75))
-	{
+	} else if ((rStorage >= 41) && (rStorage <= 75)){
 		return cEXPReward*Scrap_Level_2;
-	}
-
-	else if ((rStorage >= 76) && (rStorage <= 100))
-	{
+	} else if ((rStorage >= 76) && (rStorage <= 100)){
 		return cEXPReward*Scrap_Level_3;
 	}
 }
 
-void NPC::setCEXP(int cxp)
-{
+void NPC::setCEXP(int cxp){
 	cEXPReward = cxp;
 }
 
-void NPC::initRewards()
-{
+void NPC::initRewards(){
 	ds_e.rData("Ship_Data","select from", nSID);
 
 	eXarn = ds_e.getSXC();
@@ -1331,88 +942,56 @@ void NPC::initRewards()
 
 	rStorage = getIRange(1, 150);
 
-	if (ship.getSClass() == "Frigate")
-	{
+	if (ship.getSClass() == "Frigate"){
 		rand1 = 0;
 		rand2 = getIRange(45, 120);
 		rand3 = 0;
 		rand4 = getIRange(80, 460);
-	}
-
-	else if (ship.getSClass() == "Destroyer")
-	{
+	} else if (ship.getSClass() == "Destroyer"){
 		rand1 = 0;
 		rand2 = getIRange(260, 480);
 		rand3 = getIRange(8, 25);
 		rand4 = getIRange(120, 525);
-	}
-
-	else if (ship.getSClass() == "Cruiser")
-	{
+	} else if (ship.getSClass() == "Cruiser"){
 		rand1 = 0;
 		rand2 = getIRange(345, 590);
 		rand3 = getIRange(19, 36);
 		rand4 = getIRange(245, 780);
-	}
-
-	else if (ship.getSClass() == "Battle Cruiser")
-	{
+	} else if (ship.getSClass() == "Battle Cruiser"){
 		rand1 = getIRange(1, 3);
 		rand2 = getIRange(490, 680);
 		rand3 = getIRange(34, 75);
 		rand4 = getIRange(470, 989);
-	}
-
-	else if (ship.getSClass() == "Battleship")
-	{
+	} else if (ship.getSClass() == "Battleship"){
 		rand1 = getIRange(1, 5);
 		rand2 = getIRange(690, 800);
 		rand3 = getIRange(58, 120);
 		rand4 = getIRange(525, 1020);
-	}
-
-	else if (ship.getSClass() == "Mothership")
-	{
+	} else if (ship.getSClass() == "Mothership"){
 		rand1 = getIRange(1, 6);
 		rand2 = getIRange(745, 932);
 		rand3 = getIRange(70, 145);
 		rand4 = getIRange(635, 1345);
-	}
-
-	else if (ship.getSClass() == "Titan")
-	{
+	} else if (ship.getSClass() == "Titan"){
 		rand1 = getIRange(1, 12);
 		rand2 = getIRange(980, 1350);
 		rand3 = getIRange(95, 988);
 		rand4 = getIRange(1025, 4560);
 	}
 
-	if ((rStorage >= 0) && (rStorage <= 25)) //exp only
-	{
+	if ((rStorage >= 0) && (rStorage <= 25)){ //exp only
 		cEXPReward = rand4;
-	}
-
-	else if ((rStorage >= 26) && (rStorage <= 50)) //exp and lith
-	{
+	} else if ((rStorage >= 26) && (rStorage <= 50)){ //exp and lith
 		eLith = rand2;
 		cEXPReward = rand4;
-	}
-
-	else if ((rStorage >= 51) && (rStorage <= 75)) //exp and nwaste
-	{
+	} else if ((rStorage >= 51) && (rStorage <= 75)){ //exp and nwaste
 		eNWaste = rand3;
 		cEXPReward = rand4;
-	}
-
-	else if ((rStorage >= 76) && (rStorage <= 145)) //exp, nwaste, and lith
-	{
+	} else if ((rStorage >= 76) && (rStorage <= 145)){ //exp, nwaste, and lith
 		eLith = rand2;
 		eNWaste = rand3;
 		cEXPReward = rand4;
-	}
-
-	else if ((rStorage >= 146) && (rStorage <= 150)) //exp, nwaste, lith, and plat
-	{
+	} else if ((rStorage >= 146) && (rStorage <= 150)){ //exp, nwaste, lith, and plat
 		ePlat = rand1;
 		eLith = rand2;
 		eNWaste = rand3;
@@ -1420,8 +999,7 @@ void NPC::initRewards()
 	}
 }
 
-int NPC::getNOWingmen()
-{
+int NPC::getNOWingmen(){
 	return eWingmen.size();
 }
 
